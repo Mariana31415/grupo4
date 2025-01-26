@@ -106,7 +106,12 @@ print("Posiciones y valores de los picos detectados:")
 for i, (px, py) in enumerate(zip(picos_x, picos_y)):
     print(f"Pico {i+1}: Wavelength = {px:.4f}, Intensity = {py:.4f}")
 
-print('1.b) Método: {Limpiar datos y hallar picos}')
+print('1.b) Método: {picos maximos hallados sin ruido}')
+
+
+
+
+
 
 
 
