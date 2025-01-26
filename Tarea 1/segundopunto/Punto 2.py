@@ -108,7 +108,7 @@ for i, (px, py) in enumerate(zip(picos_x, picos_y)):
 
 print('1.b) Método: {picos maximos hallados sin ruido}')
 
-
+print('1.c hallar la localización del máximo y el ancho a media altura (FWHM).')
 
 
 
