@@ -64,6 +64,17 @@ periodos = np.diff(peak_times)
 frecuencia = 1 / np.mean(periodos)
 print(f"2.b) Frecuencia de la señal: {frecuencia:.3f} Hz")
 
+'''
+Procedimiento para 2b: 
+
+1. Detectamos los picos de B(t)
+
+2. Calculamos los periodos entre picos consecutivos
+
+3. Sacamos el promedio de los periodos T(medio)
+
+4. Obtuvimos la frecuencia como 1/T(medio)
+'''
 
 # 2c)
 y = df_hysteresis["H"] 
