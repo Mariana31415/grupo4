@@ -4,7 +4,7 @@ from scipy.signal import find_peaks
 from scipy.integrate import simpson
 import numpy as np
 import sympy as sym
-
+import scipy
 #punto 1
 
 #1.a Limpiar los datos
@@ -14,7 +14,7 @@ x1 = np.array(df1['Wavelength (pm)'], dtype=float)
 y1 = np.array(df1['Intensity (mJy)'], dtype=float)
 
 # Función para obtener los parámetros del modelo de regresión polinomial
-def GetFit(x1, y1, n=1):
+def GetFit(x, y, n=1):
     l = x.shape[0]
     b = y
 
@@ -29,13 +29,12 @@ def GetFit(x1, y1, n=1):
     xsol = np.linalg.solve(AT, bT)
 
     return xsol
-
 # Función para obtener el modelo ajustado (predicciones)
-def GetModel(x1, p):
-    y1 = 0.
+def GetModel(x, p):
+    y = 0.
     for i in range(len(p)):
-        y1 += p[i] * x**i
-    return y1
+        y += p[i] * x**i
+    return y
 
 n = 40
 param = GetFit(x1, y1, n)
@@ -61,7 +60,7 @@ ax[0].plot(x1, y_pred, color='r', lw=2, label='Fitted Model')
 ax[0].set_title('Datos Originales')
 ax[0].set_xlabel('Wavelength (pm)')
 ax[0].set_ylabel('Intensity (mJy)')
-ax[0].plt.grid(True)
+ax[0].grid(True)
 ax[0].legend()
 
 # Después de la limpieza (datos corregidos)
@@ -70,7 +69,7 @@ ax[1].plot(x1, y_pred, color='r', lw=2, label='Fitted Model')
 ax[1].set_title('Datos Limpiados')
 ax[1].set_xlabel('Wavelength (pm)')
 ax[1].set_ylabel('Intensity (mJy)')
-ax[1].plt.grid(True)
+ax[1].grid(True)
 ax[1].legend()
 
 # Guardar la gráfica en un archivo PDF
