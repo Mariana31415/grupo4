@@ -9,12 +9,12 @@ import sympy as sym
 
 #1.a Limpiar los datos
 print('1.a limpiar los datos')
-df = pd.read_csv('Rhodium.csv')
-x = np.array(df['Wavelength (pm)'], dtype=float)
-y = np.array(df['Intensity (mJy)'], dtype=float)
+df1 = pd.read_csv('Rhodium.csv')
+x1 = np.array(df1['Wavelength (pm)'], dtype=float)
+y1 = np.array(df1['Intensity (mJy)'], dtype=float)
 
 # Función para obtener los parámetros del modelo de regresión polinomial
-def GetFit(x, y, n=1):
+def GetFit(x1, y1, n=1):
     l = x.shape[0]
     b = y
 
@@ -31,22 +31,22 @@ def GetFit(x, y, n=1):
     return xsol
 
 # Función para obtener el modelo ajustado (predicciones)
-def GetModel(x, p):
-    y = 0.
+def GetModel(x1, p):
+    y1 = 0.
     for i in range(len(p)):
-        y += p[i] * x**i
-    return y
+        y1 += p[i] * x**i
+    return y1
 
 n = 40
-param = GetFit(x, y, n)
+param = GetFit(x1, y1, n)
 
 # Calcular las predicciones del modelo ajustado
-y_pred = GetModel(x, param)
+y_pred = GetModel(x1, param)
 
 # Calcular el error residual (diferencia entre los valores reales y los predichos)
-error = np.abs(y - y_pred)
+error = np.abs(y1 - y_pred)
 threshold = 3 * np.std(error)
-y_clean = np.where(error > threshold, y_pred, y)
+y_clean = np.where(error > threshold, y_pred, y1)
 
 # Contar los datos eliminados o corregidos
 n_eliminados = np.sum(error > threshold)
@@ -56,8 +56,8 @@ print(f'1.a) Número de datos eliminados: {n_eliminados}')
 fig, ax = plt.subplots(1, 2, figsize=(12, 6))
 
 # Antes de la limpieza (datos originales)
-ax[0].scatter(x, y, color='b', label='Original Data')
-ax[0].plot(x, y_pred, color='r', lw=2, label='Fitted Model')
+ax[0].scatter(x1, y1, color='b', label='Original Data')
+ax[0].plot(x1, y_pred, color='r', lw=2, label='Fitted Model')
 ax[0].set_title('Datos Originales')
 ax[0].set_xlabel('Wavelength (pm)')
 ax[0].set_ylabel('Intensity (mJy)')
@@ -65,8 +65,8 @@ ax[0].plt.grid(True)
 ax[0].legend()
 
 # Después de la limpieza (datos corregidos)
-ax[1].scatter(x, y_clean, color='g', label='Cleaned Data')
-ax[1].plot(x, y_pred, color='r', lw=2, label='Fitted Model')
+ax[1].scatter(x1, y_clean, color='g', label='Cleaned Data')
+ax[1].plot(x1, y_pred, color='r', lw=2, label='Fitted Model')
 ax[1].set_title('Datos Limpiados')
 ax[1].set_xlabel('Wavelength (pm)')
 ax[1].set_ylabel('Intensity (mJy)')
@@ -86,12 +86,12 @@ print('1.b Hallar los dos picos de rayos X eliminando el espectro de fondo')
 peaks, properties = find_peaks(y_clean, prominence=0.05, height=0.1) 
 
 # Coordenadas de los picos detectados
-picos_x = x[peaks]
+picos_x = x1[peaks]
 picos_y = y_clean[peaks]
 
 # Graficar los datos corregidos con los picos detectados
 plt.figure(figsize=(10, 6))
-plt.scatter(x, y_clean, color='green', s=5, label="Datos corregidos")  # Datos limpios
+plt.scatter(x1, y_clean, color='green', s=5, label="Datos corregidos")  # Datos limpios
 plt.scatter(picos_x, picos_y, color='red', s=50, label="Picos detectados")  # Picos detectados
 plt.xlabel("Wavelength (pm)")
 plt.ylabel("Intensity (mJy)")
