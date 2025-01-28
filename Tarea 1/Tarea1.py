@@ -110,6 +110,53 @@ print('1.b) Método: {picos maximos hallados sin ruido}')
 
 print('1.c hallar la localización del máximo y el ancho a media altura (FWHM).')
 
+#1.c Función para calcular el FWHM
+def calculate_fwhm(x, y, peak_index):
+    """Calcula el ancho a media altura (FWHM) de un pico en y ubicado en peak_index."""
+    peak_height = y[peak_index]
+    half_max = peak_height / 2
+
+    # Buscar la izquierda del pico
+    left_side = np.where(y[:peak_index] < half_max)[0]
+    left_x = x[left_side[-1]] if len(left_side) > 0 else None
+
+    # Buscar la derecha del pico
+    right_side = np.where(y[peak_index:] < half_max)[0]
+    right_x = x[peak_index + right_side[0]] if len(right_side) > 0 else None
+
+    # Calcular FWHM
+    if left_x is not None and right_x is not None:
+        fwhm = right_x - left_x
+    else:
+        fwhm = None  # Si no se encuentra el FWHM
+
+    return fwhm, left_x, right_x
+
+# Detectar los picos
+peaks, properties = find_peaks(y_clean, prominence=0.05, height=0.1)
+picos_x = x1[peaks]
+picos_y = y_clean[peaks]
+
+# Guardar resultados
+results = []
+for i, peak_index in enumerate(peaks):
+    fwhm, left_x, right_x = calculate_fwhm(x1, y_clean, peak_index)
+
+    # Almacenar resultados en una lista
+    results.append({
+        "Pico": i + 1,
+        "Wavelength (pm)": f"{picos_x[i]:.4f}",
+        "Intensity (mJy)": f"{picos_y[i]:.4f}",
+        "FWHM (pm)": f"{fwhm:.4f}" if fwhm else "No encontrado",
+        "Left X (pm)": f"{left_x:.4f}" if left_x else "No encontrado",
+        "Right X (pm)": f"{right_x:.4f}" if right_x else "No encontrado"
+    })
+
+# Convertir a DataFrame para mejor visualización
+df_results = pd.DataFrame(results)
+
+# Mostrar la tabla con tabulate
+print(tabulate(df_results, headers="keys", tablefmt="grid"))
 
 
 
