@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 from scipy.integrate import simpson
+from scipy.integrate import trapezoid
 import numpy as np
 import sympy as sym
 import scipy
@@ -165,8 +166,8 @@ df_hysteresis = pd.DataFrame(cleaned_data, columns=["t", "B", "H"]).astype(float
 # 2.a) Graficar H y B en funcion de t
 print('2.a')
 plt.figure(figsize=(10, 5))
-plt.plot(df_hysteresis["t"], df_hysteresis["B"], label="Campo externo B(mT)")
-plt.plot(df_hysteresis["t"], df_hysteresis["H"], label="Densidad del campo interno H(A/m)")
+plt.scatter(df_hysteresis["t"], df_hysteresis["B"], label="Campo externo B(mT)")
+plt.scatter(df_hysteresis["t"], df_hysteresis["H"], label="Densidad del campo interno H(A/m)")
 plt.xlabel("Tiempo(ms)")
 plt.ylabel("Intensidad del campo")
 plt.legend()
@@ -176,30 +177,50 @@ plt.savefig("histerico.pdf")
 plt.show()
 
 # 2b) Frecuencia de la señal
-peaks, _ = find_peaks(df_hysteresis["B"])
-peak_times = df_hysteresis["t"].iloc[peaks].values
-periodos = np.diff(peak_times)
-frecuencia = 1 / np.mean(periodos)
-print(f"2.b) Frecuencia de la señal: {frecuencia:.3f} Hz")
+def func_seno(t, A, f, phi, C):
+    return A * np.sin(2 * np.pi * f * t + phi) + C
+popt, _ = curve_fit(func_seno,df_hysteresis["t"],df_hysteresis["H"], p0=[2.8, 1/2, 0, -0.10])
+# p0 son los valores iniciales de amplitud, frecuencia y desplazamiento vertical y horizontal
+# que estimo yo a partir de la grafica del primer punto.
+# Extraer los parámetros ajustados
+A_fit, f_fit, phi_fit, C_fit = popt
 
-print('Procedimiento para 2b: 1. Detectamos los picos de B(t)\n'
-      '2. Calculamos los periodos entre picos consecutivos\n'
-      '3. Sacamos el promedio de los periodos T(medio)\n'
-      '4. Obtuvimos la frecuencia como 1/T(medio)')
+
+# Mostrar los resultados
+
+print(f"Frecuencia nueva(f): {f_fit}")
+
+
+print('Procedimiento para 2b: 1. Modelamos una funcion seno\n'
+      '2. hacemos un ajuste de datos con esta funcion\n'
+      '3. imprimimos la frecuencia\n')
 
 # 2c)
-y = df_hysteresis["H"] 
-x = df_hysteresis["B"]
-area_hysteresis = scipy.integrate.simpson(y=y,x=x, dx=1, axis=-1, even='avg') 
-#Hacemos conversion de unidades para que nos quede en el sistema internacional.
-area_hysteresis_conv = area_hysteresis*(10**(-3))
-print(f"2.c) Energia perdida: {area_hysteresis_conv:.3f} J/m^3")
+y = df_hysteresis["B"]
+x = df_hysteresis["H"]
+
+B = df_hysteresis["B"].values
+H = df_hysteresis["H"].values
+
+# Implementar la fórmula para calcular el área dentro de la curva cerrada
+def calculate_area(x, y):
+    n = len(x)
+    area = 0.0
+    for i in range(n - 1):
+        area += x[i] * y[i + 1] - x[i + 1] * y[i]
+    # Cerrar el polígono sumando el último término
+    area += x[-1] * y[0] - x[0] * y[-1]
+    return 0.5 * abs(area)
+
+# Calcular el área usando la fórmula
+area_enclosed = calculate_area(H, B)
+print(f"Área encerrada dentro del ciclo de histéresis: {area_enclosed*(10**-3):.4f} J/m^3")
 
 #Grafica histeresis H vs B
 plt.figure(figsize=(8, 6))
-plt.fill(df_hysteresis["B"], df_hysteresis["H"],color="blue", alpha=0.5, label="Energia perdida")
-plt.xlabel("Campo externo B(mT)")
-plt.ylabel("Densidad del campo interno H(A/m)")
+plt.fill(df_hysteresis["H"], df_hysteresis["B"],color="blue", alpha=0.5, label="Energia perdida")
+plt.xlabel("Densidad del campo interno H(A/m)")
+plt.ylabel("Campo externo B(mT)")
 plt.legend()
 plt.title("Energia perdida")
 plt.grid(True)
