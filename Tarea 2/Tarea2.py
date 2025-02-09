@@ -126,3 +126,48 @@ plt.show()
 
 print(f"Periodo solar estimado: {P_solar:.2f} años")
 
+
+
+print('2.b.b')
+
+t_dias = np.arange(len(datossolar))
+
+X = np.fft.rfft(datossolar) / len(datossolar)  # Normalización correcta
+f = np.fft.rfftfreq(len(datossolar), d=1) 
+# Seleccionar los primeros 10 armónicos
+n_armonicos = 10
+
+X_n = X[:n_armonicos]
+f_n = f[:n_armonicos]
+
+def y(t, f, X):
+    y_res = np.zeros_like(t, dtype=np.float64)
+    for Xk, fk in zip(X, f):
+        # Añadir la parte real (coseno) y la parte imaginaria (seno)
+        term = np.abs(Xk) * np.cos(2 * np.pi * fk * t + np.angle(Xk))
+        term += np.abs(Xk) * np.sin(2 * np.pi * fk * t + np.angle(Xk))
+        
+        # Añadir el complejo conjugado
+        y_res += np.real(term) + np.conj(np.imag(term))  # Sumar conjugado de la parte imaginaria
+
+    return y_res.real
+
+# Fecha de inicio de los datos
+fecha_inicio = datetime(2012, 1, 1)
+
+# Fecha de predicción (10 de febrero de 2025)
+fecha_prediccion = datetime(2025, 2, 10)
+
+# Calcular días transcurridos
+t_prediccion = (fecha_prediccion - fecha_inicio).days
+
+# Calcular predicción
+n_manchas_hoy = y(np.array([t_prediccion]), f_n, X_n)[0]
+
+# Imprimir el resultado en el formato requerido
+print(f'2.b.b) {{n_manchas_hoy = {n_manchas_hoy:.2f}}}')
+
+
+t_pred = np.arange(0, t_prediccion + 10000)  # Ampliar predicción hasta 2027
+manchas_pred = y(t_pred, f_n, X_n)
+
