@@ -144,3 +144,17 @@ n_manchas_hoy = y(np.array([t_prediccion]), f_n, X_n)[0]
 
 # Imprimir el resultado en el formato requerido
 print(f'2.b.b) {{n_manchas_hoy = {n_manchas_hoy:.2f}}}')
+
+t_pred = np.arange(0, t_prediccion + 10000)  # Ampliar predicción hasta 2027
+manchas_pred = y(t_pred, f_n, X_n)
+
+plt.figure(figsize=(10,5))
+plt.plot(date, datossolar, label="Datos Originales", color="blue")
+plt.plot(t_pred, manchas_pred, label="Predicción FFT", color="red", linestyle="dashed")
+plt.xlabel("Días desde 2012")
+plt.ylabel("Número de manchas solares")
+plt.title("Predicción de Manchas Solares con FFT")
+plt.savefig("2.b.pdf")
+plt.legend()
+plt.grid()
+plt.show()
