@@ -75,6 +75,7 @@ print('2.b.a')
 
 año = np.array(dfsolar['year'], dtype=float)
 datossolar = np.array(dfsolar['SSN'], dtype=float)
+date = np.array(dfsolar['Date'])
 
 # Calcula la diferencia de años para obtener el intervalo de muestreo
 intervalo_tiempo = np.diff(año)  # Diferencias entre años consecutivos
