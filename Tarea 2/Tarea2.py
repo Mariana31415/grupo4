@@ -171,3 +171,60 @@ print(f'2.b.b) {{n_manchas_hoy = {n_manchas_hoy:.2f}}}')
 t_pred = np.arange(0, t_prediccion + 10000)  # Ampliar predicción hasta 2027
 manchas_pred = np.round(y(t_pred, f_n, X_n)).astype(int)
 
+
+
+print('punto 3')
+
+# Definición del filtro gaussiano
+def gaussian_filter(freq, alpha):
+    return np.exp(- (freq * alpha) ** 2)
+
+# Cargar los datos de manchas solares
+data = np.loadtxt("OGLE-LMC-CEP-0001.dat")
+
+# Extraer tiempo y magnitud de los datos OGLE
+time = data[:, 0]
+magnitude = data[:, 1]
+
+# Datos de manchas solares (preprocesados)
+t_dias = np.arange(len(datossolar))
+
+# Transformada de Fourier de la señal
+fft_original = np.fft.fft(datossolar)
+frequencies = np.fft.fftfreq(len(datossolar), d=np.mean(intervalo_tiempo))
+
+# Valores de α a probar
+alpha_values = [0.1, 0.5, 1, 2]  # Desde un filtro suave hasta uno más agresivo
+
+# Crear subplots
+fig, axes = plt.subplots(len(alpha_values), 2, figsize=(12, 10))
+fig.subplots_adjust(hspace=0.4)
+
+# Aplicar el filtro y graficar para cada valor de α
+for i, alpha in enumerate(alpha_values):
+    # Construcción del filtro y señal filtrada
+    filter_gaussian = gaussian_filter(frequencies, alpha)
+    fft_filtered = fft_original * filter_gaussian
+    signal_filtered = np.fft.ifft(fft_filtered).real
+
+    # Graficar señal original y filtrada en el dominio del tiempo
+    axes[i, 0].plot(t_dias, datossolar, label="Señal original", color="blue")
+    axes[i, 0].plot(t_dias, signal_filtered, label=f"Señal filtrada (α={alpha})", linestyle="dashed", color="red")
+    axes[i, 0].set_title("Señal en el dominio del tiempo")
+    axes[i, 0].legend()
+    
+    # Graficar transformada de Fourier original y filtrada
+    axes[i, 1].plot(frequencies, np.abs(fft_original), label="FFT original", color="green")
+    axes[i, 1].plot(frequencies, np.abs(fft_filtered), label="FFT filtrada", linestyle="dashed", color="purple")
+    axes[i, 1].set_title("Transformada de Fourier")
+    axes[i, 1].legend()
+    
+    # Añadir texto con el valor de α
+    axes[i, 0].text(0.05, 0.85, f"α = {alpha}", transform=axes[i, 0].transAxes, fontsize=12)
+
+# Guardar la figura como "3.1.pdf"
+plt.savefig("3.1.pdf", format="pdf")
+
+# Mostrar la figura
+plt.show()
+
