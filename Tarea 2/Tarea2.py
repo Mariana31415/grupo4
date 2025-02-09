@@ -9,7 +9,7 @@ import scipy
 from datetime import datetime
 from tabulate import tabulate
 from scipy.signal import savgol_filter
-
+from PIL import Image
 
 
 print('punto 2')
@@ -228,3 +228,53 @@ plt.savefig("3.1.pdf", format="pdf")
 # Mostrar la figura
 plt.show()
 
+
+
+print('3.b')
+
+
+
+def remove_periodic_noise(image_path, output_path, high_freq_cutoff=15, line_freq_range=5):
+    """
+    Elimina ruido periódico de una imagen usando filtrado en el dominio de Fourier.
+
+    Parámetros:
+    - image_path: Ruta de la imagen original.
+    - output_path: Ruta para guardar la imagen filtrada.
+    - high_freq_cutoff: Tamaño del filtro para eliminar altas frecuencias.
+    - line_freq_range: Rango de frecuencias a eliminar (basado en el patrón de la persiana).
+    """
+    # Cargar la imagen en escala de grises usando PIL
+    img = Image.open(image_path)
+    img_array = np.array(img)
+    N, M = img_array.shape  # Dimensiones de la imagen
+    
+    # Aplicar Transformada de Fourier
+    FFT = np.fft.fft2(img_array)
+    FFT = np.fft.fftshift(FFT)  # Centramos la FFT
+
+    # Suprimir las frecuencias asociadas con el ruido periódico (patrón de la persiana)
+    # Este paso es un filtro que elimina ciertas frecuencias en la imagen
+    for i in range(N):
+        for j in range(M):
+            # Si la frecuencia está dentro del rango del patrón de la persiana, se anula
+            if abs(i - N//2) % line_freq_range == 0 or abs(j - M//2) % line_freq_range == 0:
+                FFT[i, j] = 0  # Eliminar estas frecuencias
+
+    # Transformada inversa para recuperar la imagen sin ruido
+    FFT = np.fft.ifftshift(FFT)  # Deshacer el desplazamiento
+    img_filtered = np.fft.ifft2(FFT).real  # Obtener imagen filtrada
+
+    # Guardar la imagen procesada
+    Image.fromarray(np.uint8(img_filtered)).save(output_path)
+
+    # Mostrar la imagen filtrada
+    plt.figure(figsize=(6,6))
+    plt.imshow(img_filtered, cmap="gray")
+    plt.title(f"Imagen Filtrada: {output_path}")
+    plt.axis("off")
+    plt.show()
+
+# Aplicar el filtrado a ambas imágenes
+remove_periodic_noise("catto.png", "3.b.a.png", high_freq_cutoff=20, line_freq_range=12)
+remove_periodic_noise("Noisy_Smithsonian_Castle.jpg", "3.b.b.png", high_freq_cutoff=50, line_freq_range=55)
