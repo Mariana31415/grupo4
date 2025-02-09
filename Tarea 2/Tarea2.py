@@ -162,12 +162,12 @@ fecha_prediccion = datetime(2025, 2, 10)
 t_prediccion = (fecha_prediccion - fecha_inicio).days
 
 # Calcular predicción
-n_manchas_hoy = y(np.array([t_prediccion]), f_n, X_n)[0]
+n_manchas_hoy = int(round(y(np.array([t_prediccion]), f_n, X_n)[0]))
 
 # Imprimir el resultado en el formato requerido
 print(f'2.b.b) {{n_manchas_hoy = {n_manchas_hoy:.2f}}}')
 
 
 t_pred = np.arange(0, t_prediccion + 10000)  # Ampliar predicción hasta 2027
-manchas_pred = y(t_pred, f_n, X_n)
+manchas_pred = np.round(y(t_pred, f_n, X_n)).astype(int)
 
