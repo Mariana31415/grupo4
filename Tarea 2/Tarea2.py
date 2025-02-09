@@ -8,6 +8,7 @@ import sympy as sym
 import scipy
 from datetime import datetime
 from tabulate import tabulate
+from scipy.signal import savgol_filter
 
 
 
@@ -41,63 +42,81 @@ plt.show()
 print('manchas solares punto 2')
 print('2.b')
 
-file_path = "list_aavso-arssn_daily.txt"
+# Cargar los datos desde el archivo
+archivo = open('list_aavso-arssn_daily.txt', 'r')
+year, month, day, manchas_sol = [], [], [], []
 
-with open(file_path, "r") as file:
-  lines = file.readlines()
+for linea in archivo:
+    if linea.strip():  # Ignorar líneas vacías
+        partes = linea.split()
+        if len(partes) == 4 and partes[0] != 'Year':  # Ignorar encabezado
+            num_fltY, num_fltM, num_fltD, num_fltS = map(int, partes)
+            if num_fltY < 2012:  # Filtrar datos hasta 2012
+                year.append(num_fltY)
+                month.append(num_fltM)
+                day.append(num_fltD)
+                manchas_sol.append(num_fltS)
 
-data = [line.strip().split() for line in lines]
+archivo.close()
 
-# Filtrar filas incorrectas (asegurarse de que solo queden las de datos)
-data = [row for row in data if len(row) == 4]  # Solo filas con 4 elementos
+# Convertir a DataFrame
+fechas = pd.to_datetime([f'{a}-{m}-{d}' for a, m, d in zip(year, month, day)])
+df = pd.DataFrame({'fecha': fechas, 'manchas': manchas_sol}).set_index('fecha')
 
-# Crear el DataFrame con las columnas correctas
-dfsolar = pd.DataFrame(data, columns=["year", "month", "day", "SSN"])
+# Suavizado con Savitzky-Golay
+manchas_suavizadas_sg = savgol_filter(df['manchas'], window_length=51, polyorder=3)
 
-# Convertir a tipos numéricos, ignorando errores
-dfsolar = dfsolar.apply(pd.to_numeric, errors='coerce')
+# Graficar datos originales y suavizados
+plt.figure(figsize=(10, 5))
 
-# Eliminar filas con valores NaN (valores no convertibles)
-dfsolar = dfsolar.dropna()
+# Datos originales en un azul más vibrante
+plt.plot(df.index, df['manchas'], label="Datos Originales", color="#1f77b4", linewidth=1.5)
 
-# Convertir a enteros después de eliminar NaN
-dfsolar = dfsolar.astype({"year": int, "month": int, "day": int, "SSN": int})
+# Predicción en un tono más suave pero llamativo
+plt.plot(df.index, manchas_suavizadas_sg, label="Predicción FFT", color="#ff7f0e", linestyle="dashed", linewidth=2)
 
-# Crear columna de fecha
-dfsolar["Date"] = pd.to_datetime(dfsolar[["year", "month", "day"]])
+plt.xlabel("Días desde 2012", fontsize=12)
+plt.ylabel("Número de manchas solares", fontsize=12)
+plt.title("Predicción de Manchas Solares con FFT", fontsize=14, fontweight='bold')
 
-dfsolar = dfsolar[dfsolar["year"] <= 2011]
+plt.legend(fontsize=12)
+plt.grid(True, linestyle="--", alpha=0.6)
+plt.show()
+
+
+# FFT de los datos suavizados
+frecuencias = np.fft.rfftfreq(len(manchas_suavizadas_sg), d=1)
+transformada = np.fft.rfft(manchas_suavizadas_sg)
+densidad_espectral = np.abs(transformada) ** 2
 
 
 
+# ---- SEGUNDA FFT CON ESCALA EN AÑOS ----
+año = np.array(df.index.year, dtype=float)
+datossolar = np.array(df['manchas'], dtype=float)
+date = np.array(df.index)
 
-print('2.b.a')
-
-año = np.array(dfsolar['year'], dtype=float)
-datossolar = np.array(dfsolar['SSN'], dtype=float)
-date = np.array(dfsolar['Date'])
-
-# Calcula la diferencia de años para obtener el intervalo de muestreo
+# Calcular intervalo de muestreo
 intervalo_tiempo = np.diff(año)  # Diferencias entre años consecutivos
 
-# Realiza la FFT de los datos solares
+# FFT de los datos solares
 f_fast = np.fft.rfft(datossolar)
 
-# Calcula las frecuencias correspondientes a la FFT
-freq = np.fft.rfftfreq(len(año), d=np.mean(intervalo_tiempo))  # Se usa el intervalo medio
+# Frecuencia en ciclos por año
+freq = np.fft.rfftfreq(len(año), d=np.mean(intervalo_tiempo))
 
-# Buscar el pico dominante en la FFT (excluyendo la componente DC en freq[0])
-idx_max = np.argmax(np.abs(f_fast[1:])) + 1  # Evitamos el índice 0 (componente de tendencia)
-freq_dominante = freq[idx_max]  # Frecuencia dominante en ciclos por año
+# Encontrar la frecuencia dominante (excluyendo la componente DC)
+idx_max = np.argmax(np.abs(f_fast[1:])) + 1
+freq_dominante = freq[idx_max]
 
-# Calculamos el período en años
+# Calcular el período en años
 P_solar = 1 / freq_dominante  
 
 # Graficar la FFT en escala logarítmica
 plt.figure(figsize=(10, 6))
 plt.scatter(freq, np.abs(f_fast), color='green', s=5, label="FFT Magnitude")
-plt.xscale('log')  # Escala logarítmica en el eje X
-plt.yscale('log')  # Escala logarítmica en el eje Y
+plt.xscale('log')
+plt.yscale('log')
 plt.xlabel("Frecuencia (ciclos/año)")
 plt.ylabel("|FFT|")
 plt.title("FFT vs Frecuencia - Datos Solares")
@@ -107,55 +126,3 @@ plt.show()
 
 print(f"Periodo solar estimado: {P_solar:.2f} años")
 
-print('2.b.b')
-
-t_dias = np.arange(len(datossolar))
-
-X = np.fft.rfft(datossolar) / len(datossolar)  # Normalización correcta
-f = np.fft.rfftfreq(len(datossolar), d=1) 
-# Seleccionar los primeros 10 armónicos
-n_armonicos = 10
-
-X_n = X[:n_armonicos]
-f_n = f[:n_armonicos]
-
-def y(t, f, X):
-    y_res = np.zeros_like(t, dtype=np.float64)
-    for Xk, fk in zip(X, f):
-        # Añadir la parte real (coseno) y la parte imaginaria (seno)
-        term = np.abs(Xk) * np.cos(2 * np.pi * fk * t + np.angle(Xk))
-        term += np.abs(Xk) * np.sin(2 * np.pi * fk * t + np.angle(Xk))
-        
-        # Añadir el complejo conjugado
-        y_res += np.real(term) + np.conj(np.imag(term))  # Sumar conjugado de la parte imaginaria
-
-    return y_res.real
-
-# Fecha de inicio de los datos
-fecha_inicio = datetime(2012, 1, 1)
-
-# Fecha de predicción (10 de febrero de 2025)
-fecha_prediccion = datetime(2025, 2, 10)
-
-# Calcular días transcurridos
-t_prediccion = (fecha_prediccion - fecha_inicio).days
-
-# Calcular predicción
-n_manchas_hoy = y(np.array([t_prediccion]), f_n, X_n)[0]
-
-# Imprimir el resultado en el formato requerido
-print(f'2.b.b) {{n_manchas_hoy = {n_manchas_hoy:.2f}}}')
-
-t_pred = np.arange(0, t_prediccion + 10000)  # Ampliar predicción hasta 2027
-manchas_pred = y(t_pred, f_n, X_n)
-
-plt.figure(figsize=(10,5))
-plt.plot(date, datossolar, label="Datos Originales", color="blue")
-plt.plot(t_pred, manchas_pred, label="Predicción FFT", color="red", linestyle="dashed")
-plt.xlabel("Días desde 2012")
-plt.ylabel("Número de manchas solares")
-plt.title("Predicción de Manchas Solares con FFT")
-plt.savefig("2.b.pdf")
-plt.legend()
-plt.grid()
-plt.show()
