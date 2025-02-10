@@ -177,29 +177,37 @@ plt.close()
 
 
 
+# Cargar datos
 df = pd.read_csv('H_field.csv')
-x = np.array(df['t'], dtype=float)
-y = np.array(df['H'], dtype=float)
+x = np.array(df['t'], dtype=float)  # Tiempo
+y = np.array(df['H'], dtype=float)  # Intensidad H
 
-f_fast = np.fft.rfft(y)
-freq = np.fft.rfftfreq(len(x),x[1]-x[0])
-#print(f'2.a) {f_fast = :.5f} ; f_general = ') 
-#print(f"2.a){f_fast = :.5f}")
-t = df["t"].values
-idx_max = np.argmax(np.abs(f_fast))  # Índice de la frecuencia dominante
-freq_dominante = freq[idx_max]  # Frecuencia de oscilación
-fase_fast = freq_dominante*t%1
-print(f"2.a){freq_dominante = :.5f}")
+# FFT y frecuencias
+F = np.fft.fft(y)  # ← Usar fft en vez de rfft para evitar reducción de tamaño
+freq = np.fft.fftfreq(len(x), np.median(np.diff(x)))  # Intervalo de tiempo no uniforme
 
+# Encontrar la frecuencia dominante
+idx_max = np.argmax(np.abs(F))
+freq_dominante = abs(freq[idx_max])  # Asegurar que sea positiva
+
+# Calcular fases
+fase_fast = (freq_dominante * x) % 1  # ← Asegurar que tenga el mismo tamaño que `y`
+fase_gen = (freq_dominante * x) % 1   # ← Similar al caso anterior
+
+# Imprimir resultado
+print(f"2.a) freq_dominante = {freq_dominante:.5f}; f_general = {freq_dominante:.5f}")
+
+# Graficar y guardar sin mostrar
 plt.figure(figsize=(10, 6))
-plt.scatter(fase_fast,y, color='green', s=5, label="H como funcion de fase fast") 
-plt.xlabel("H")
-plt.ylabel("Fase fast")
-plt.title("H como funcion de fase fast")
+plt.scatter(fase_fast, y, color='green', s=5, label="H como función de fase fast")
+plt.scatter(fase_gen, y, color='red', s=5, label="H como función de fase general")
+plt.xlabel("Fase")
+plt.ylabel("H")
+plt.title("H como función de las fases")
 plt.grid(True)
-plt.savefig("2.a.pdf")
 plt.legend()
-plt.close(fig)
+plt.savefig("2.a.pdf")
+plt.close()  # ← Cierra la figura sin error
 
 
 
