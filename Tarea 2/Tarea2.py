@@ -14,8 +14,7 @@ from numpy.typing import NDArray
 from scipy.fft import fft, fftfreq
 from scipy.signal import find_peaks, peak_widths
 
-print('punto 1')
-print('1.a)')
+
 
 # Función para generar datos de prueba
 def datos_prueba(t_max: float, dt: float, amplitudes: np.ndarray[float],
@@ -57,13 +56,13 @@ plt.title('Transformada de Fourier de señales con y sin ruido')
 plt.legend()
 plt.grid(True)
 plt.savefig('1.a.pdf')
-
+plt.close()
 
 # Respuesta a la pregunta sobre el efecto del ruido
 respuesta_1a = "1.a) Atenuación de picos, ruido similar amplitudes."
 print(respuesta_1a)
 
-print('1.b')
+
 
 # Parámetros iniciales
 dt = 0.01  # Intervalo de muestreo
@@ -102,10 +101,8 @@ plt.title('Ancho a Media Altura vs. Intervalo de Tiempo')
 plt.legend()
 plt.grid(True, which="both", linestyle="--", linewidth=0.5)
 plt.savefig('1.b.pdf')
+plt.close()
 
-
-
-print('1.c')
 
 file_path = "OGLE-LMC-CEP-0001.dat"
 # Leer las primeras líneas del archivo para ver su estructura
@@ -172,6 +169,7 @@ plt.grid(True)
 
 # Guardar la gráfica como 1.c.pdf
 plt.savefig("1.c.pdf")
+plt.close()
 
 
 
@@ -179,19 +177,6 @@ plt.savefig("1.c.pdf")
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-print('punto 2')
-print('2. a)')
 df = pd.read_csv('H_field.csv')
 x = np.array(df['t'], dtype=float)
 y = np.array(df['H'], dtype=float)
@@ -214,11 +199,10 @@ plt.title("H como funcion de fase fast")
 plt.grid(True)
 plt.savefig("2.a.pdf")
 plt.legend()
+plt.close(fig)
 
 
 
-print('manchas solares punto 2')
-print('2.b')
 
 # Cargar los datos desde el archivo
 archivo = open('list_aavso-arssn_daily.txt', 'r')
@@ -244,20 +228,7 @@ df = pd.DataFrame({'fecha': fechas, 'manchas': manchas_sol}).set_index('fecha')
 # Suavizado con Savitzky-Golay
 manchas_suavizadas_sg = savgol_filter(df['manchas'], window_length=51, polyorder=3)
 
-# Graficar datos originales y suavizados
-plt.figure(figsize=(10, 5))
 
-# Datos originales en un azul más vibrante
-plt.plot(df.index, df['manchas'], label="Datos Originales", color="#1f77b4", linewidth=1.5)
-
-# Predicción en un tono más suave pero llamativo
-plt.plot(df.index, manchas_suavizadas_sg, label="Predicción FFT", color="#ff7f0e", linestyle="dashed", linewidth=2)
-
-plt.xlabel("Días desde 2012", fontsize=12)
-plt.ylabel("Número de manchas solares", fontsize=12)
-plt.title("Predicción de Manchas Solares con FFT", fontsize=14, fontweight='bold')
-plt.legend(fontsize=12)
-plt.grid(True, linestyle="--", alpha=0.6)
 
 
 
@@ -292,7 +263,7 @@ print(f"Periodo solar estimado: {P_solar:.2f} años")
 
 
 
-print('2.b.b')
+
 
 t_dias = np.arange(len(datossolar))
 
@@ -337,7 +308,7 @@ manchas_pred = np.round(y(t_pred, f_n, X_n)).astype(int)
 
 
 
-print('punto 3')
+
 
 # Definición del filtro gaussiano
 def gaussian_filter(freq, alpha):
@@ -388,13 +359,14 @@ for i, alpha in enumerate(alpha_values):
 
 # Guardar la figura como "3.1.pdf"
 plt.savefig("3.1.pdf", format="pdf")
+plt.close(fig)
 
 
 
 
 
 
-print('3.b')
+
 
 
 
@@ -434,11 +406,13 @@ def remove_periodic_noise(image_path, output_path, high_freq_cutoff=15, line_fre
 
     # Mostrar la imagen filtrada
     plt.figure(figsize=(6,6))
-    plt.imshow(img_filtered, cmap="gray")
     plt.title(f"Imagen Filtrada: {output_path}")
     plt.axis("off")
-   
+    plt.imshow(img_filtered, cmap="gray")
+ 
 
 # Aplicar el filtrado a ambas imágenes
-remove_periodic_noise("catto.png", "3.b.a.png", high_freq_cutoff=20, line_freq_range=12)
-remove_periodic_noise("Noisy_Smithsonian_Castle.jpg", "3.b.b.png", high_freq_cutoff=50, line_freq_range=55)
+imagen1 = remove_periodic_noise("catto.png", "3.b.a.png", high_freq_cutoff=20, line_freq_range=12)
+imagen2 = remove_periodic_noise("Noisy_Smithsonian_Castle.jpg", "3.b.b.png", high_freq_cutoff=50, line_freq_range=55)
+plt.close(imagen1)
+plt.close(imagen2)
