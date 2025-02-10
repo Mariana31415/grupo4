@@ -15,9 +15,11 @@ from scipy.fft import fft, fftfreq
 from scipy.signal import find_peaks, peak_widths
 
 print('punto 1')
+print('1.a)')
 
 # Función para generar datos de prueba
-def datos_prueba(t_max: float, dt: float, amplitudes: NDArray[float], frecuencias: NDArray[float], ruido: float = 0.0) -> tuple[NDArray[float], NDArray[float]]:
+def datos_prueba(t_max: float, dt: float, amplitudes: np.ndarray[float],
+                 frecuencias: np.ndarray[float], ruido: float = 0.0) -> tuple[np.ndarray[float], np.ndarray[float]]:
     ts = np.arange(0., t_max, dt)
     ys = np.zeros_like(ts, dtype=float)
     for A, f in zip(amplitudes, frecuencias):
@@ -25,79 +27,153 @@ def datos_prueba(t_max: float, dt: float, amplitudes: NDArray[float], frecuencia
     ys += np.random.normal(loc=0, size=len(ys), scale=ruido) if ruido else 0
     return ts, ys
 
-# Implementación de la transformada de Fourier
-def Fourier(t: NDArray[float], y: NDArray[float], f: NDArray[float]) -> NDArray[complex]:
-    return np.array([np.sum(y * np.exp(-2j * np.pi * t * fi)) for fi in f])
+# Función para calcular la Transformada de Fourier
+def Fourier(t: np.ndarray[float], y: np.ndarray[float], f: float) -> complex:
+    N = len(t)
+    return np.sum(y * np.exp(-2j * np.pi * t * f)) / N
 
-# Parámetros de la señal
-t_max = 10.0  # Tiempo máximo
-dt = 0.01  # Paso de tiempo
-amplitudes = np.array([1.0, 0.5, 0.3])  # Amplitudes
-frecuencias = np.array([1.0, 2.0, 3.0])  # Frecuencias
+# Generación de datos de prueba
+t_max = 10.0
+dt = 0.01
+amplitudes = np.array([1.0, 2.0, 1.5])
+frecuencias = np.array([1.0, 2.0, 3.0])
 
-# Generar señales de prueba
-ts, ys_sin_ruido = datos_prueba(t_max, dt, amplitudes, frecuencias, ruido=0.0)
-ts, ys_con_ruido = datos_prueba(t_max, dt, amplitudes, frecuencias, ruido=0.5)
+# Datos con y sin ruido
+ts_no_ruido, ys_no_ruido = datos_prueba(t_max, dt, amplitudes, frecuencias, ruido=0.0)
+ts_con_ruido, ys_con_ruido = datos_prueba(t_max, dt, amplitudes, frecuencias, ruido=0.5)
 
-# Frecuencias para la transformada
-f = np.linspace(0, 5, 500)  # Rango de frecuencias
+# Cálculo de la transformada de Fourier
+frequencies = fftfreq(len(ts_no_ruido), dt)
+transformada_no_ruido = np.abs(fft(ys_no_ruido))
+transformada_con_ruido = np.abs(fft(ys_con_ruido))
 
-# Calcular transformadas
-transformada_sin_ruido = Fourier(ts, ys_sin_ruido, f)
-transformada_con_ruido = Fourier(ts, ys_con_ruido, f)
-
-# Graficar
+# Graficación
 plt.figure(figsize=(10, 6))
-plt.plot(f, np.abs(transformada_sin_ruido), label="Sin ruido")
-plt.plot(f, np.abs(transformada_con_ruido), label="Con ruido", alpha=0.7)
-plt.xlabel("Frecuencia (Hz)")
-plt.ylabel("|Transformada|")
+plt.plot(frequencies[:len(frequencies)//2], transformada_no_ruido[:len(frequencies)//2], label='Sin ruido')
+plt.plot(frequencies[:len(frequencies)//2], transformada_con_ruido[:len(frequencies)//2], label='Con ruido')
+plt.xlabel('Frecuencia')
+plt.ylabel('Valor absoluto de la transformada')
+plt.title('Transformada de Fourier de señales con y sin ruido')
 plt.legend()
-plt.title("Transformada de Fourier")
-plt.savefig("1.a.pdf")
+plt.grid(True)
+plt.savefig('1.a.pdf')
 
 
-# Respuesta a la pregunta
-print("1.a) El ruido ensancha los picos.")
+# Respuesta a la pregunta sobre el efecto del ruido
+respuesta_1a = "1.a) Atenuación de picos, ruido similar amplitudes."
+print(respuesta_1a)
 
-from scipy.signal import find_peaks, peak_widths
+print('1.b')
 
-# Función para calcular FWHM
-def calcular_fwhm(t: NDArray[float], y: NDArray[float], f: float) -> float:
-    transformada = Fourier(t, y, np.array([f]))
-    peaks, _ = find_peaks(np.abs(transformada), height=0.1)  # Ajustar altura mínima
-    if len(peaks) == 0:
-        return np.nan  # Devuelve NaN si no se encuentran picos
-    widths, _, _, _ = peak_widths(np.abs(transformada), peaks, rel_height=0.5)
-    return widths[0] if len(widths) > 0 else np.nan
-
-# Variar t_max y calcular FWHM
-t_max_values = np.linspace(10, 300, 50)
+# Parámetros iniciales
+dt = 0.01  # Intervalo de muestreo
+frecuencia_conocida = 1.0  # Frecuencia en Hz
+t_max_range = np.logspace(1, 2.5, 15)  # Valores de t_max logarítmicos
 fwhm_values = []
 
-for t_max_val in t_max_values:
-    ts, ys = datos_prueba(t_max_val, dt, amplitudes, frecuencias, ruido=0.0)
-    fwhm = calcular_fwhm(ts, ys, frecuencias[0])
-    fwhm_values.append(fwhm)
+for tm in t_max_range:
+    # Generar datos
+    t = np.arange(0, tm, dt)
+    y = np.sin(2 * np.pi * frecuencia_conocida * t)
 
-# Reemplazar NaN con un valor pequeño
-fwhm_values = np.array(fwhm_values)
-fwhm_values[np.isnan(fwhm_values)] = 1e-10  # Reemplazar NaN
+    # Calcular FFT
+    Y = np.abs(fft(y))
+    freqs = np.fft.fftfreq(len(t), d=dt)
+    freqs = freqs[:len(freqs) // 2]  # Tomar solo la parte positiva
+    Y = Y[:len(Y) // 2]
 
-# Graficar en escala log-log
+    # Detección de picos en la FFT
+    peaks, _ = find_peaks(Y)
+    if len(peaks) > 0:
+        results_half = peak_widths(Y, peaks, rel_height=0.5)
+        fwhm = results_half[0][0] * (freqs[1] - freqs[0])
+        fwhm_values.append(fwhm)
+    else:
+        fwhm_values.append(np.nan)  # En caso de no detectar picos
+
+# Graficar FWHM vs. t_max
 plt.figure(figsize=(10, 6))
-plt.loglog(t_max_values, fwhm_values, 'o-', label="FWHM")
-plt.xlabel("t_max (s)")
-plt.ylabel("FWHM (Hz)")
-plt.title("Ancho de pico en función de t_max")
+plt.plot(t_max_range, fwhm_values, marker='o', linestyle='-', label='FWHM vs. $t_{max}$')
+plt.xscale('log')
+plt.yscale('log')
+plt.xlabel('$t_{max}$ (s)')
+plt.ylabel('FWHM')
+plt.title('Ancho a Media Altura vs. Intervalo de Tiempo')
 plt.legend()
-plt.grid(True, which="both", ls="--")
-plt.savefig("1.b.pdf")
+plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+plt.savefig('1.b.pdf')
 
 
-# Ajustar un modelo matemático (por ejemplo, una potencia)
-coefs = np.polyfit(np.log(t_max_values), np.log(fwhm_values), 1)
-print(f"Modelo ajustado: FWHM ∝ t_max^{coefs[0]:.2f}")
+
+print('1.c')
+
+file_path = "OGLE-LMC-CEP-0001.dat"
+# Leer las primeras líneas del archivo para ver su estructura
+with open(file_path, "r") as file:
+    lines = file.readlines()
+
+# Mostrar las primeras líneas del archivo
+lines[:10]
+
+import numpy as np
+
+# Cargar los datos desde el archivo
+data = np.loadtxt(file_path)
+
+# Separar las columnas
+t = data[:, 0]  # Tiempo en días
+y = data[:, 1]  # Intensidad
+sigma_y = data[:, 2]  # Incertidumbre
+
+# Ver los primeros valores
+t[:5], y[:5], sigma_y[:5]
+import matplotlib.pyplot as plt
+
+# Calcular diferencias de tiempo
+dt = np.diff(t)
+
+# Calcular una estimación de la frecuencia de Nyquist
+nyquist_freq = 1 / (2 * np.median(dt))
+
+# Imprimir el resultado
+print(f"1.c) f Nyquist: {nyquist_freq:.4f} 1/día")
+from scipy.fft import fft, fftfreq
+
+# Quitar el promedio de la señal para eliminar el pico en f = 0
+y_zero_mean = y - np.mean(y)
+
+# Definir el rango de frecuencias de interés (según la recomendación del profesor)
+freqs = np.linspace(0, 8, 1000)  # 1000 puntos entre 0 y 8 d⁻¹
+
+# Implementar la transformada de Fourier manualmente
+def Fourier(t: np.ndarray, y: np.ndarray, f: np.ndarray) -> np.ndarray:
+    return np.array([np.sum(y * np.exp(-2j * np.pi * f_i * t)) for f_i in f])
+
+# Calcular la transformada de Fourier
+fourier_transform = Fourier(t, y_zero_mean, freqs)
+
+# Obtener la frecuencia con el pico más alto (excluyendo f=0)
+f_true = freqs[np.argmax(np.abs(fourier_transform[1:])) + 1]
+
+# Imprimir el resultado
+print(f"1.c) f true: {f_true:.4f} 1/día")
+
+# Calcular la fase
+phi = np.mod(f_true * t, 1)
+
+# Graficar la intensidad en función de la fase
+plt.figure(figsize=(8, 5))
+plt.scatter(phi, y, s=10, alpha=0.5, color='b', label="Datos experimentales")
+plt.xlabel("Fase φ (mod(f_true * t, 1))")
+plt.ylabel("Intensidad (magnitud)")
+plt.title("Diagrama de fase de la señal")
+plt.legend()
+plt.grid(True)
+
+# Guardar la gráfica como 1.c.pdf
+plt.savefig("1.c.pdf")
+
+
 
 
 
