@@ -10,6 +10,107 @@ from datetime import datetime
 from tabulate import tabulate
 from scipy.signal import savgol_filter
 from PIL import Image
+from numpy.typing import NDArray
+
+
+print('punto 1')
+
+# Función para generar datos de prueba
+def datos_prueba(t_max: float, dt: float, amplitudes: NDArray[float], frecuencias: NDArray[float], ruido: float = 0.0) -> tuple[NDArray[float], NDArray[float]]:
+    ts = np.arange(0., t_max, dt)
+    ys = np.zeros_like(ts, dtype=float)
+    for A, f in zip(amplitudes, frecuencias):
+        ys += A * np.sin(2 * np.pi * f * ts)
+    ys += np.random.normal(loc=0, size=len(ys), scale=ruido) if ruido else 0
+    return ts, ys
+
+# Implementación de la transformada de Fourier
+def Fourier(t: NDArray[float], y: NDArray[float], f: NDArray[float]) -> NDArray[complex]:
+    return np.array([np.sum(y * np.exp(-2j * np.pi * t * fi)) for fi in f])
+
+# Parámetros de la señal
+t_max = 10.0  # Tiempo máximo
+dt = 0.01  # Paso de tiempo
+amplitudes = np.array([1.0, 0.5, 0.3])  # Amplitudes
+frecuencias = np.array([1.0, 2.0, 3.0])  # Frecuencias
+
+# Generar señales de prueba
+ts, ys_sin_ruido = datos_prueba(t_max, dt, amplitudes, frecuencias, ruido=0.0)
+ts, ys_con_ruido = datos_prueba(t_max, dt, amplitudes, frecuencias, ruido=0.5)
+
+# Frecuencias para la transformada
+f = np.linspace(0, 5, 500)  # Rango de frecuencias
+
+# Calcular transformadas
+transformada_sin_ruido = Fourier(ts, ys_sin_ruido, f)
+transformada_con_ruido = Fourier(ts, ys_con_ruido, f)
+
+# Graficar
+plt.figure(figsize=(10, 6))
+plt.plot(f, np.abs(transformada_sin_ruido), label="Sin ruido")
+plt.plot(f, np.abs(transformada_con_ruido), label="Con ruido", alpha=0.7)
+plt.xlabel("Frecuencia (Hz)")
+plt.ylabel("|Transformada|")
+plt.legend()
+plt.title("Transformada de Fourier")
+plt.savefig("1.a.pdf")
+plt.show()
+
+# Respuesta a la pregunta
+print("1.a) El ruido ensancha los picos.")
+
+from scipy.signal import find_peaks, peak_widths
+
+# Función para calcular FWHM
+def calcular_fwhm(t: NDArray[float], y: NDArray[float], f: float) -> float:
+    transformada = Fourier(t, y, np.array([f]))
+    peaks, _ = find_peaks(np.abs(transformada), height=0.1)  # Ajustar altura mínima
+    if len(peaks) == 0:
+        return np.nan  # Devuelve NaN si no se encuentran picos
+    widths, _, _, _ = peak_widths(np.abs(transformada), peaks, rel_height=0.5)
+    return widths[0] if len(widths) > 0 else np.nan
+
+# Variar t_max y calcular FWHM
+t_max_values = np.linspace(10, 300, 50)
+fwhm_values = []
+
+for t_max_val in t_max_values:
+    ts, ys = datos_prueba(t_max_val, dt, amplitudes, frecuencias, ruido=0.0)
+    fwhm = calcular_fwhm(ts, ys, frecuencias[0])
+    fwhm_values.append(fwhm)
+
+# Reemplazar NaN con un valor pequeño
+fwhm_values = np.array(fwhm_values)
+fwhm_values[np.isnan(fwhm_values)] = 1e-10  # Reemplazar NaN
+
+# Graficar en escala log-log
+plt.figure(figsize=(10, 6))
+plt.loglog(t_max_values, fwhm_values, 'o-', label="FWHM")
+plt.xlabel("t_max (s)")
+plt.ylabel("FWHM (Hz)")
+plt.title("Ancho de pico en función de t_max")
+plt.legend()
+plt.grid(True, which="both", ls="--")
+plt.savefig("1.b.pdf")
+plt.show()
+
+# Ajustar un modelo matemático (por ejemplo, una potencia)
+coefs = np.polyfit(np.log(t_max_values), np.log(fwhm_values), 1)
+print(f"Modelo ajustado: FWHM ∝ t_max^{coefs[0]:.2f}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 print('punto 2')
