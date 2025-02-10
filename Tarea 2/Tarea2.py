@@ -54,7 +54,7 @@ plt.ylabel("|Transformada|")
 plt.legend()
 plt.title("Transformada de Fourier")
 plt.savefig("1.a.pdf")
-plt.show()
+
 
 # Respuesta a la pregunta
 print("1.a) El ruido ensancha los picos.")
@@ -92,7 +92,7 @@ plt.title("Ancho de pico en función de t_max")
 plt.legend()
 plt.grid(True, which="both", ls="--")
 plt.savefig("1.b.pdf")
-plt.show()
+
 
 # Ajustar un modelo matemático (por ejemplo, una potencia)
 coefs = np.polyfit(np.log(t_max_values), np.log(fwhm_values), 1)
@@ -137,7 +137,7 @@ plt.title("H como funcion de fase fast")
 plt.grid(True)
 plt.savefig("2.a.pdf")
 plt.legend()
-plt.show()
+
 
 
 print('manchas solares punto 2')
@@ -179,10 +179,9 @@ plt.plot(df.index, manchas_suavizadas_sg, label="Predicción FFT", color="#ff7f0
 plt.xlabel("Días desde 2012", fontsize=12)
 plt.ylabel("Número de manchas solares", fontsize=12)
 plt.title("Predicción de Manchas Solares con FFT", fontsize=14, fontweight='bold')
-
 plt.legend(fontsize=12)
 plt.grid(True, linestyle="--", alpha=0.6)
-plt.show()
+
 
 
 # FFT de los datos suavizados
@@ -327,7 +326,7 @@ for i, alpha in enumerate(alpha_values):
 plt.savefig("3.1.pdf", format="pdf")
 
 # Mostrar la figura
-plt.show()
+
 
 
 
@@ -374,7 +373,7 @@ def remove_periodic_noise(image_path, output_path, high_freq_cutoff=15, line_fre
     plt.imshow(img_filtered, cmap="gray")
     plt.title(f"Imagen Filtrada: {output_path}")
     plt.axis("off")
-    plt.show()
+   
 
 # Aplicar el filtrado a ambas imágenes
 remove_periodic_noise("catto.png", "3.b.a.png", high_freq_cutoff=20, line_freq_range=12)
