@@ -288,19 +288,6 @@ freq_dominante = freq[idx_max]
 
 # Calcular el período en años
 P_solar = 1 / freq_dominante  
-
-# Graficar la FFT en escala logarítmica
-plt.figure(figsize=(10, 6))
-plt.scatter(freq, np.abs(f_fast), color='green', s=5, label="FFT Magnitude")
-plt.xscale('log')
-plt.yscale('log')
-plt.xlabel("Frecuencia (ciclos/año)")
-plt.ylabel("|FFT|")
-plt.title("FFT vs Frecuencia - Datos Solares")
-plt.grid(True)
-plt.legend()
-plt.show()
-
 print(f"Periodo solar estimado: {P_solar:.2f} años")
 
 
@@ -402,7 +389,7 @@ for i, alpha in enumerate(alpha_values):
 # Guardar la figura como "3.1.pdf"
 plt.savefig("3.1.pdf", format="pdf")
 
-# Mostrar la figura
+
 
 
 
