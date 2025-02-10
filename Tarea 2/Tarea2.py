@@ -11,6 +11,7 @@ from tabulate import tabulate
 from scipy.signal import savgol_filter
 from PIL import Image
 from numpy.typing import NDArray
+from scipy.fft import fft, fftfreq
 
 
 print('punto 1')
