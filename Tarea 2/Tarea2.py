@@ -12,7 +12,7 @@ from scipy.signal import savgol_filter
 from PIL import Image
 from numpy.typing import NDArray
 from scipy.fft import fft, fftfreq
-
+from scipy.signal import find_peaks, peak_widths
 
 print('punto 1')
 
