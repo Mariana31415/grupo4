@@ -112,7 +112,6 @@ with open(file_path, "r") as file:
 # Mostrar las primeras líneas del archivo
 lines[:10]
 
-import numpy as np
 
 # Cargar los datos desde el archivo
 data = np.loadtxt(file_path)
@@ -124,7 +123,7 @@ sigma_y = data[:, 2]  # Incertidumbre
 
 # Ver los primeros valores
 t[:5], y[:5], sigma_y[:5]
-import matplotlib.pyplot as plt
+
 
 # Calcular diferencias de tiempo
 dt = np.diff(t)
@@ -134,7 +133,7 @@ nyquist_freq = 1 / (2 * np.median(dt))
 
 # Imprimir el resultado
 print(f"1.c) f Nyquist: {nyquist_freq:.4f} 1/día")
-from scipy.fft import fft, fftfreq
+
 
 # Quitar el promedio de la señal para eliminar el pico en f = 0
 y_zero_mean = y - np.mean(y)
