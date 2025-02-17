@@ -13,8 +13,8 @@ from PIL import Image
 from numpy.typing import NDArray
 from scipy.fft import fft, fftfreq
 from scipy.signal import find_peaks, peak_widths
-
-
+from scipy.optimize import curve_fit
+from datetime import timedelta
 
 # Función para generar datos de prueba
 def datos_prueba(t_max: float, dt: float, amplitudes: np.ndarray[float],
@@ -27,10 +27,12 @@ def datos_prueba(t_max: float, dt: float, amplitudes: np.ndarray[float],
     return ts, ys
 
 # Función para calcular la Transformada de Fourier
-def Fourier(t: np.ndarray[float], y: np.ndarray[float], f: float) -> complex:
-    N = len(t)
-    return np.sum(y * np.exp(-2j * np.pi * t * f)) / N
+#def Fourier(t: np.ndarray[float], y: np.ndarray[float], f: float) -> complex:
+#    N = len(t)
+#    return np.sum(y * np.exp(-2j * np.pi * t * f)) / N
 
+def Fourier(t: np.ndarray, y: np.ndarray, f: np.ndarray) -> np.ndarray:
+    return np.array([np.sum(y * np.exp(-2j * np.pi * f_i * t)) for f_i in f])
 # Generación de datos de prueba
 t_max = 10.0
 dt = 0.01
@@ -64,6 +66,8 @@ print(respuesta_1a)
 
 
 
+# Datos de la gráfica (reemplazar con los valores correctos)
+
 # Parámetros iniciales
 dt = 0.01  # Intervalo de muestreo
 frecuencia_conocida = 1.0  # Frecuencia en Hz
@@ -78,7 +82,7 @@ for tm in t_max_range:
     # Calcular FFT
     Y = np.abs(fft(y))
     freqs = np.fft.fftfreq(len(t), d=dt)
-    freqs = freqs[:len(freqs) // 2]  # Tomar solo la parte positiva
+    freqs = freqs[:len(freqs) // 2]  # Tomar solo la parte positiva5
     Y = Y[:len(Y) // 2]
 
     # Detección de picos en la FFT
@@ -89,15 +93,44 @@ for tm in t_max_range:
         fwhm_values.append(fwhm)
     else:
         fwhm_values.append(np.nan)  # En caso de no detectar picos
+# Definir la función de ajuste: y = a * x^b
+def power_law(x, a, b):
+    return a * x**b
 
-# Graficar FWHM vs. t_max
+# Seleccionar solo la parte estable
+start_idx = 2  # Punto donde la tendencia se vuelve lineal
+t_max_linear = t_max_range[start_idx:]
+fwhm_linear = fwhm_values[start_idx:]
+
+# Ajuste de curva en la parte lineal
+popt, pcov = curve_fit(power_law, t_max_linear, fwhm_linear)
+a_opt, b_opt = popt
+
+# Calcular la incertidumbre en los parámetros
+perr = np.sqrt(np.diag(pcov))
+a_err, b_err = perr
+
+# Predicción y bandas de confianza
+t_fit = np.logspace(np.log10(t_max_linear[0]), np.log10(t_max_linear[-1]), 100)
+fwhm_fit = power_law(t_fit, a_opt, b_opt)
+
+
+
+# Graficar datos y ajuste con bandas de confianza
 plt.figure(figsize=(10, 6))
-plt.plot(t_max_range, fwhm_values, marker='o', linestyle='-', label='FWHM vs. $t_{max}$')
+plt.plot(t_max_range, fwhm_values, 'o', label='Datos', markersize=5)
+plt.plot(t_fit, fwhm_fit, '-', label= f"Ajuste: ${popt[0]:.2f} t_{{max}}^{{{popt[1]:.2f}}}$")
+
+
+# Marcar la región ajustada
+plt.axvline(t_max_range[start_idx], linestyle="--", color="red", label="Inicio del ajuste")
+
+# Escalas logarítmicas
 plt.xscale('log')
 plt.yscale('log')
 plt.xlabel('$t_{max}$ (s)')
 plt.ylabel('FWHM')
-plt.title('Ancho a Media Altura vs. Intervalo de Tiempo')
+plt.title('Ajuste de FWHM vs. $t_{max}$ (Región lineal)')
 plt.legend()
 plt.grid(True, which="both", linestyle="--", linewidth=0.5)
 plt.savefig('1.b.pdf')
@@ -112,6 +145,7 @@ with open(file_path, "r") as file:
 # Mostrar las primeras líneas del archivo
 lines[:10]
 
+import numpy as np
 
 # Cargar los datos desde el archivo
 data = np.loadtxt(file_path)
@@ -123,17 +157,17 @@ sigma_y = data[:, 2]  # Incertidumbre
 
 # Ver los primeros valores
 t[:5], y[:5], sigma_y[:5]
-
+import matplotlib.pyplot as plt
 
 # Calcular diferencias de tiempo
 dt = np.diff(t)
 
 # Calcular una estimación de la frecuencia de Nyquist
-nyquist_freq = 1 / (2 * np.median(dt))
+nyquist_freq = 1 / (2 * np.mean(dt))
 
 # Imprimir el resultado
 print(f"1.c) f Nyquist: {nyquist_freq:.4f} 1/día")
-
+from scipy.fft import fft, fftfreq
 
 # Quitar el promedio de la señal para eliminar el pico en f = 0
 y_zero_mean = y - np.mean(y)
@@ -169,6 +203,7 @@ plt.grid(True)
 # Guardar la gráfica como 1.c.pdf
 plt.savefig("1.c.pdf")
 plt.close()
+
 
 
 
@@ -222,7 +257,8 @@ plt.title("Comparación de fases: FFT rápida vs Fourier general")
 plt.legend()
 plt.grid()
 plt.savefig("2.a.pdf")
-plt.close()  # ← Cierra la figura sin error
+plt.close()
+
 
 
 
@@ -253,13 +289,10 @@ manchas_suavizadas_sg = savgol_filter(df['manchas'], window_length=51, polyorder
 
 
 
-
-
 # FFT de los datos suavizados
 frecuencias = np.fft.rfftfreq(len(manchas_suavizadas_sg), d=1)
 transformada = np.fft.rfft(manchas_suavizadas_sg)
 densidad_espectral = np.abs(transformada) ** 2
-
 
 
 # ---- SEGUNDA FFT CON ESCALA EN AÑOS ----
@@ -292,8 +325,8 @@ t_dias = np.arange(len(datossolar))
 
 X = np.fft.rfft(datossolar) / len(datossolar)  # Normalización correcta
 f = np.fft.rfftfreq(len(datossolar), d=1) 
-# Seleccionar los primeros 10 armónicos
-n_armonicos = 10
+# Seleccionar los primeros 50 armónicos
+n_armonicos = 50
 
 X_n = X[:n_armonicos]
 f_n = f[:n_armonicos]
@@ -301,17 +334,14 @@ f_n = f[:n_armonicos]
 def y(t, f, X):
     y_res = np.zeros_like(t, dtype=np.float64)
     for Xk, fk in zip(X, f):
-        # Añadir la parte real (coseno) y la parte imaginaria (seno)
+        # Solo la parte real de la suma de Fourier
         term = np.abs(Xk) * np.cos(2 * np.pi * fk * t + np.angle(Xk))
-        term += np.abs(Xk) * np.sin(2 * np.pi * fk * t + np.angle(Xk))
-        
-        # Añadir el complejo conjugado
-        y_res += np.real(term) + np.conj(np.imag(term))  # Sumar conjugado de la parte imaginaria
+        y_res += term
 
-    return y_res.real
+    return y_res
 
 # Fecha de inicio de los datos
-fecha_inicio = datetime(2012, 1, 1)
+fecha_inicio = datetime(1945, 1, 1)
 
 # Fecha de predicción (10 de febrero de 2025)
 fecha_prediccion = datetime(2025, 2, 10)
@@ -322,12 +352,14 @@ t_prediccion = (fecha_prediccion - fecha_inicio).days
 # Calcular predicción
 n_manchas_hoy = int(round(y(np.array([t_prediccion]), f_n, X_n)[0]))
 
+
 # Imprimir el resultado en el formato requerido
 print(f'2.b.b) {{n_manchas_hoy = {n_manchas_hoy:.2f}}}')
+plt.scatter(date,datossolar)
+plt.close()
 
 
-t_pred = np.arange(0, t_prediccion + 10000)  # Ampliar predicción hasta 2027
-manchas_pred = np.round(y(t_pred, f_n, X_n)).astype(int)
+
 
 
 
@@ -350,6 +382,7 @@ t_dias = np.arange(len(datossolar))
 # Transformada de Fourier de la señal
 fft_original = np.fft.fft(datossolar)
 frequencies = np.fft.fftfreq(len(datossolar), d=np.mean(intervalo_tiempo))
+
 
 # Valores de α a probar
 alpha_values = [0.1, 0.5, 1, 2]  # Desde un filtro suave hasta uno más agresivo
@@ -403,7 +436,7 @@ def remove_periodic_noise(image_path, output_path, high_freq_cutoff=15, line_fre
     - high_freq_cutoff: Tamaño del filtro para eliminar altas frecuencias.
     - line_freq_range: Rango de frecuencias a eliminar (basado en el patrón de la persiana).
     """
-    # Cargar la imagen en escala de grises usando PIL
+
     img = Image.open(image_path)
     img_array = np.array(img)
     N, M = img_array.shape  # Dimensiones de la imagen
@@ -432,7 +465,7 @@ def remove_periodic_noise(image_path, output_path, high_freq_cutoff=15, line_fre
     plt.title(f"Imagen Filtrada: {output_path}")
     plt.axis("off")
     plt.imshow(img_filtered, cmap="gray")
- 
+   
 
 # Aplicar el filtrado a ambas imágenes
 imagen1 = remove_periodic_noise("catto.png", "3.b.a.png", high_freq_cutoff=20, line_freq_range=12)
