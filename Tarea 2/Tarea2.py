@@ -178,33 +178,49 @@ plt.close()
 
 # Cargar datos
 df = pd.read_csv('H_field.csv')
-x = np.array(df['t'], dtype=float)  # Tiempo
+x = np.array(df['t'], dtype=float)  # Tiempo en días
 y = np.array(df['H'], dtype=float)  # Intensidad H
 
 # FFT y frecuencias
-F = np.fft.fft(y)  # ← Usar fft en vez de rfft para evitar reducción de tamaño
-freq = np.fft.fftfreq(len(x), np.median(np.diff(x)))  # Intervalo de tiempo no uniforme
+F_fast = np.fft.rfft(y)  # FFT de la señal
+freq_fast = np.fft.rfftfreq(len(x), np.median(np.diff(x)))  # Frecuencias asociadas
 
-# Encontrar la frecuencia dominante
-idx_max = np.argmax(np.abs(F))
-freq_dominante = abs(freq[idx_max])  # Asegurar que sea positiva
+# Encontrar la frecuencia dominante en el análisis rápido
+idx_max_fast = np.argmax(np.abs(F_fast))
+freq_dominante_fast = abs(freq_fast[idx_max_fast])  # Frecuencia dominante "rápida"
 
-# Calcular fases
-fase_fast = (freq_dominante * x) % 1  # ← Asegurar que tenga el mismo tamaño que `y`
-fase_gen = (freq_dominante * x) % 1   # ← Similar al caso anterior
+# Definir función Fourier manual
 
-# Imprimir resultado
-print(f"2.a) freq_dominante = {freq_dominante:.5f}; f_general = {freq_dominante:.5f}")
+def Fourier(t: np.ndarray, y: np.ndarray, f: np.ndarray) -> np.ndarray:
+    return np.array([np.sum(y * np.exp(-2j * np.pi * f_i * t)) for f_i in f])
 
-# Graficar y guardar sin mostrar
-plt.figure(figsize=(10, 6))
-plt.scatter(fase_fast, y, color='green', s=5, label="H como función de fase fast")
-plt.scatter(fase_gen, y, color='red', s=5, label="H como función de fase general")
-plt.xlabel("Fase")
-plt.ylabel("H")
-plt.title("H como función de las fases")
-plt.grid(True)
+# Definir frecuencias de análisis general
+freqs = np.linspace(0, 8, 1000)  # Rango de frecuencias explorado
+
+# Calcular la transformada de Fourier
+y_zero_mean = y - np.mean(y)  # Centrar la señal
+fourier_transform = Fourier(x, y_zero_mean, freqs)
+
+# Obtener la frecuencia con el pico más alto (excluyendo f=0)
+idx_max_general = np.argmax(np.abs(fourier_transform[1:])) + 1
+freq_dominante_general = freqs[idx_max_general]
+
+# Calcular fases individuales con sus respectivas frecuencias
+fase_fast = (freq_dominante_fast * x) % 1  # Fase basada en freq_dominante_fast
+fase_gen = (freq_dominante_general * x) % 1  # Fase basada en freq_dominante_general
+
+# Imprimir resultados
+print(f"2.a) freq_dominante_fast = {freq_dominante_fast:.5f}; freq_dominante_general = {freq_dominante_general:.5f}")
+
+# Graficar H en función de ambas fases
+plt.figure(figsize=(8, 6))
+plt.scatter(fase_fast, y, s=5, alpha=0.5, label="Fase con FFT rápida")
+plt.scatter(fase_gen, y, s=5, alpha=0.5, label="Fase con Fourier general")
+plt.xlabel("Fase φ")
+plt.ylabel("Intensidad H")
+plt.title("Comparación de fases: FFT rápida vs Fourier general")
 plt.legend()
+plt.grid()
 plt.savefig("2.a.pdf")
 plt.close()  # ← Cierra la figura sin error
 
