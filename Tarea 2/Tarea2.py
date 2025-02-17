@@ -359,6 +359,13 @@ plt.scatter(date,datossolar)
 plt.close()
 
 
+t_pred = np.arange(0, t_prediccion + 10000)  # Ampliar predicción hasta 2027
+fechas_pred = [fecha_inicio + timedelta(days=i) for i in range(len(t_pred))]
+manchas_pred = np.round(y(t_pred, f_n, X_n)).astype(int)
+plt.figure(figsize=(15,5))
+plt.scatter(date,datossolar,s=1)
+plt.scatter(fechas_pred,manchas_pred,s=1)
+plt.savefig('2.b.pdf')
 
 
 
