@@ -366,7 +366,7 @@ plt.figure(figsize=(15,5))
 plt.scatter(date,datossolar,s=1)
 plt.scatter(fechas_pred,manchas_pred,s=1)
 plt.savefig('2.b.pdf')
-
+plt.close()
 
 
 
