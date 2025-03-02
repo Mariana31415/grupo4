@@ -112,7 +112,7 @@ plt.figure(figsize=(10, 6))
 
 # Pozo de potencial parabólico (línea punteada)
 V = 0.5 * m * omega**2 * x**2
-plt.plot(x, V, 'k--', label='Pozo de potencial')
+
 
 # Factor de escala para reducir la amplitud de las funciones de onda
 scale_factor = 0.5  # Puedes ajustar este valor según necesites
@@ -121,12 +121,5 @@ scale_factor = 0.5  # Puedes ajustar este valor según necesites
 for n in range(n_levels):
     psi = scale_factor * wavefunctions[:, n]  # Escalar la función de onda
     E_n = energies[n]
-    plt.plot(x, psi + E_n, label=f'n = {n}, E = {E_n:.2f}')
+    
 
-# Configuración del gráfico
-plt.xlabel('x')
-plt.ylabel('Energía')
-plt.grid(True)
-plt.ylim(0, 6)  # Ajustado para mostrar hasta E_4 ≈ 4.5 más algo de margen
-plt.xlim(-6, 6)
-plt.show()
