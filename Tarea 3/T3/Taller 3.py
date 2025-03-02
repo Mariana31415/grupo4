@@ -4,7 +4,7 @@ from scipy.optimize import minimize_scalar
 
 # Parámetros del problema
 g = 9.773  # Gravedad en Bogotá (m/s²)
-m = 1.0  # Masa del proyectil (kg)
+m = 10  # Masa del proyectil (kg)
 v0 = 20.0  # Velocidad inicial (m/s)
 dt = 0.01  # Paso de tiempo
 t_max = 10  # Tiempo máximo de simulación
