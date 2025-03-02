@@ -107,9 +107,6 @@ for i in range(n_levels):
     norm = np.sqrt(np.sum(wavefunctions[:, i]**2) * h)
     wavefunctions[:, i] /= norm
 
-# Graficar
-plt.figure(figsize=(10, 6))
-
 # Pozo de potencial parabólico (línea punteada)
 V = 0.5 * m * omega**2 * x**2
 
