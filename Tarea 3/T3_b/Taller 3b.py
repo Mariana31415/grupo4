@@ -74,6 +74,73 @@ phi = gauss_seidel(phi, rho, mask, boundary_condition, dx)
 #punto 3
 
 
+# Parámetros físicos y orbitales
+GM = 4.0 * np.pi**2
+c = 63239.7263
+a = 0.38709893
+e = 0.20563069
+
+x0 = a * (1.0 + e)
+y0 = 0.0
+r0 = x0
+v0 = np.sqrt(GM * (2.0/r0 - 1.0/a))
+vx0 = 0.0
+vy0 = +v0
+t_span = (0.0, 10.0)
+dt = 1e-2
+alpha = 1e-2
+
+# Función de derivadas (Newton y Relativista)
+def derivadas_newton(t, state):
+    x, y, vx, vy = state
+    r = np.sqrt(x*x + y*y)
+    ax = -GM * x / (r**3)
+    ay = -GM * y / (r**3)
+    return np.array([vx, vy, ax, ay])
+
+# Método RK4
+def runge_kutta_4(derivs, y0, t_span, dt):
+    t0, tf = t_span
+    n_steps = int(np.floor((tf - t0)/dt))
+    times = np.zeros(n_steps+1)
+    sol = np.zeros((n_steps+1, len(y0)))
+
+    times[0] = t0
+    sol[0] = y0
+
+    for i in range(n_steps):
+        t = times[i]
+        y = sol[i]
+
+        k1 = derivs(t, y)
+        k2 = derivs(t + dt/2, y + dt*k1/2)
+        k3 = derivs(t + dt/2, y + dt*k2/2)
+        k4 = derivs(t + dt, y + dt*k3)
+
+        sol[i+1] = y + (dt/6.0) * (k1 + 2*k2 + 2*k3 + k4)
+        times[i+1] = t + dt
+
+    return times, sol
+
+estado_inicial = np.array([x0, y0, vx0, vy0])
+t_newt, sol_newt = runge_kutta_4(derivadas_newton, estado_inicial, t_span, dt)
+x_n, y_n = sol_newt[:, 0], sol_newt[:, 1]
+
+
+
+# Función de actualización para la animación
+def update(frame):
+    line_n.set_data(x_n[:frame], y_n[:frame])
+    pt_n.set_data([x_n[frame]], [y_n[frame]])
+    return line_n, pt_n
+
+# Crear la animación
+frames_list = range(0, len(t_newt), 10)
+anim = animation.FuncAnimation(fig, update, frames=frames_list, interval=50)
+
+
+plt.close()
+
 
 
 
