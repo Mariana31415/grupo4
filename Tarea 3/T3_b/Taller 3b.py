@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
 
+import matplotlib.animation as animation
+from IPython.display import HTML
+
 #primer punto Poisson
 
 # Parámetros de la malla
@@ -64,6 +67,11 @@ phi = gauss_seidel(phi, rho, mask, boundary_condition, dx)
 
 
 
+
+
+
+
+#punto 3
 
 
 
