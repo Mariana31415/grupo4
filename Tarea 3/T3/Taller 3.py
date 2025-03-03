@@ -1,6 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize_scalar
+from scipy.signal import argrelextrema
+from numba import jit
+import matplotlib.animation as animation
+from IPython.display import HTML
 
 # Parámetros del problema
 g = 9.773  # Gravedad en Bogotá (m/s²)
@@ -238,7 +242,58 @@ plt.close()
 
 #b
 
+# Parámetros físicos y orbitales
+GM = 4.0 * np.pi**2
+a = 0.38709893
+e = 0.20563069
 
+x0 = a * (1.0 + e)
+y0 = 0.0
+vx0 = 0.0
+vy0 = np.sqrt(GM * (2.0 / x0 - 1.0 / a))
+
+# Función de derivadas (Newton)
+def derivadas_newton(t, state):
+    x, y, vx, vy = state
+    r = np.sqrt(x*x + y*y)
+    ax = -GM * x / r**3
+    ay = -GM * y / r**3
+    return [vx, vy, ax, ay]
+
+# Resolver con RK45
+t_span = (0, 10)  # 10 años
+dt = 1e-3
+t_eval = np.arange(t_span[0], t_span[1], dt)
+sol = solve_ivp(derivadas_newton, t_span, [x0, y0, vx0, vy0], t_eval=t_eval, method='RK45')
+
+x, y = sol.y[0], sol.y[1]
+vx, vy = sol.y[2], sol.y[3]
+
+# Encontrar periastro y apoastro
+r = np.sqrt(x**2 + y**2)
+periastro_idx = argrelextrema(r, np.less)[0]
+
+# Calcular ángulos y aplicar np.unwrap para evitar saltos
+angles_periastro = np.unwrap(np.arctan2(y[periastro_idx], x[periastro_idx]))
+
+t_periastro = sol.t[periastro_idx]
+
+# Convertir ángulos a grados y luego a arcosegundos
+angles_periastro_deg = np.degrees(angles_periastro) % 360
+angles_periastro_arcsec = angles_periastro_deg * 3600
+
+
+
+
+
+# Ajuste lineal con incertidumbre
+(coefs, cov_matrix) = np.polyfit(t_periastro, angles_periastro_arcsec, 1, cov=True)  # Extraer coeficientes y covarianza
+pendiente_año, intercepto = coefs
+incertidumbre_pendiente = np.sqrt(cov_matrix[0, 0])  # Extraer incertidumbre de la pendiente
+
+# Convertir pendiente a arcsec/siglo
+pendiente_siglo = pendiente_año * 100
+incertidumbre_pendiente_siglo = incertidumbre_pendiente * 100
 
 
 
