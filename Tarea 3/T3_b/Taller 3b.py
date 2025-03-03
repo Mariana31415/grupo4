@@ -57,5 +57,138 @@ phi = gauss_seidel(phi, rho, mask, boundary_condition, dx)
 
 
 
+
+#punto 4
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import animation
+from tqdm import tqdm
+
+# -----------------------------------------------------
+# 1. PARÁMETROS DEL DOMINIO
+# -----------------------------------------------------
+Nx = 50       # Número de puntos en x
+Ny = 50       # Número de puntos en y
+Lx = 4.0      # Dominio en x: [0, 4]
+Ly = 4.0      # Dominio en y: [0, 4]
+
+x = np.linspace(0, Lx, Nx)
+y = np.linspace(0, Ly, Ny)
+
+dx = x[1] - x[0]
+dy = y[1] - y[0]   # Suponemos dx = dy
+
+# -----------------------------------------------------
+# 2. TIEMPO DE SIMULACIÓN
+# -----------------------------------------------------
+Nt = 1000
+t = np.linspace(0, 4, Nt)  # Simulación en [0,4] s
+dt = t[1] - t[0]
+
+v = 5.0  # Velocidad de la onda
+lambda_ = v * dt / dx
+print("lambda =", lambda_)  # Aproximadamente 0.245
+
+gamma = 2 * dt   # Término de absorción
+
+# -----------------------------------------------------
+# 3. ARREGLO 3D PARA u(t,y,x)
+# -----------------------------------------------------
+# u tendrá dimensiones (Nt, Ny, Nx)
+u = np.zeros((Nt, Ny, Nx))
+
+# -----------------------------------------------------
+# 4. CONDICIÓN INICIAL: PULSO GAUSSIANO 2D
+# -----------------------------------------------------
+# Usamos un pulso gaussiano centrado en (x0, y0) = (2,2)
+x0, y0 = 2.0, 2.0
+sigma = 0.2
+for j in range(Ny):
+    for i in range(Nx):
+        u[0, j, i] = np.exp(-(((x[i]-x0)**2 + (y[j]-y0)**2) / (sigma**2)))
+
+# Para velocidad inicial = 0, copiamos la condición inicial:
+u[1] = u[0].copy()
+
+# -----------------------------------------------------
+# 5. CONDICIONES DE FRONTERA ABSORBENTES / FUJOSAS
+# -----------------------------------------------------
+def aplicar_condiciones_frontera(arr2d):
+    # En este ejemplo, imponemos:
+    #   - Borde izquierdo: inyección de fuente h2(t) (ver más abajo)
+    #   - Borde derecho: copia (por ejemplo, u = u[neighbor])
+    #   - Bordes superior e inferior: u = 0
+    arr2d[:, -1] = arr2d[:, -2]   # Borde derecho: Neumann (copia)
+    arr2d[0, :] = 0.0             # Borde inferior
+    arr2d[-1, :] = 0.0            # Borde superior
+    return arr2d
+
+# Función fuente para el borde izquierdo (i = 0)
+def h2(time):
+    return 0.5 * np.cos(5 * np.pi * time)
+
+# -----------------------------------------------------
+# 6. ESQUEMA FINITO DIFERENCIAS EN 2D (CON ABSORCIÓN)
+# -----------------------------------------------------
+# El esquema para un punto interior (i,j) es:
+# u[n+1,j,i] = 2*u[n,j,i] - u[n-1,j,i]
+#              + dt^2 * v^2 * [ (u[n,j,i+1]-2*u[n,j,i]+u[n,j,i-1])/dx^2
+#                               + (u[n,j+1,i]-2*u[n,j,i]+u[n,j-1,i])/dy^2 ]
+#              - gamma*u[n-1,j,i] + gamma*u[n-2,j,i]
+#
+# Para el borde izquierdo (i = 0), forzamos u[n, j, 0] = h2(t[n]).
+
+for n in tqdm(range(2, Nt)):
+    # Borde izquierdo: inyectamos la fuente en todos los y
+    for j in range(Ny):
+        u[n, j, 0] = h2(t[n])
+    
+    # Recorremos el interior (i de 1 a Nx-2, j de 1 a Ny-2)
+    for j in range(1, Ny-1):
+        for i in range(1, Nx-1):
+            d2x = (u[n-1, j, i+1] - 2*u[n-1, j, i] + u[n-1, j, i-1]) / dx**2
+            d2y = (u[n-1, j+1, i] - 2*u[n-1, j, i] + u[n-1, j-1, i]) / dy**2
+            # Usamos el mismo c (v) en todo el dominio; si se desea variar c(x,y), habría que multiplicar c^2
+            u[n, j, i] = (2*u[n-1, j, i] - u[n-2, j, i]
+                          + (dt**2)*v**2*(d2x + d2y)
+                          - gamma*u[n-1, j, i] + gamma*u[n-2, j, i])
+    
+    # Para el borde derecho (i = Nx-1), lo tratamos con una diferencia unidireccional
+    for j in range(1, Ny-1):
+        i = Nx - 1
+        d2x = (u[n-1, j, i] - 2*u[n-1, j, i-1] + u[n-1, j, i-2]) / dx**2
+        d2y = (u[n-1, j+1, i] - 2*u[n-1, j, i] + u[n-1, j-1, i]) / dy**2
+        u[n, j, i] = (2*u[n-1, j, i] - u[n-2, j, i]
+                      + (dt**2)*v**2*(d2x + d2y)
+                      - gamma*u[n-1, j, i] + gamma*u[n-2, j, i])
+    
+    # Aplicamos condiciones de frontera (superior e inferior)
+    u[n] = aplicar_condiciones_frontera(u[n])
+
+# -----------------------------------------------------
+# 7. ANIMACIÓN
+# -----------------------------------------------------
+# Seleccionamos fotogramas cada 10 pasos para la animación
+frames = []
+for n in range(0, Nt, 10):
+    frames.append(u[n].copy())
+
+fig, ax = plt.subplots(figsize=(6,6))
+im = ax.imshow(frames[0], extent=[0, Lx, 0, Ly],
+               origin='lower', cmap='RdBu', aspect='auto')
+ax.set_xlabel('x [m]')
+ax.set_ylabel('y [m]')
+ax.set_title('Onda 2D con absorción (extensión 1D a 2D)')
+
+def update(frame):
+    im.set_data(frame)
+    return [im]
+
+ani = animation.FuncAnimation(fig, update, frames=frames, interval=50)
+plt.show()
+
+
+
     
 
