@@ -73,7 +73,7 @@ phi = gauss_seidel(phi, rho, mask, boundary_condition, dx)
 
 #punto 3
 
-
+#a
 # Parámetros físicos y orbitales
 GM = 4.0 * np.pi**2
 c = 63239.7263
@@ -128,18 +128,12 @@ x_n, y_n = sol_newt[:, 0], sol_newt[:, 1]
 
 
 
-# Función de actualización para la animación
-def update(frame):
-    line_n.set_data(x_n[:frame], y_n[:frame])
-    pt_n.set_data([x_n[frame]], [y_n[frame]])
-    return line_n, pt_n
-
-# Crear la animación
-frames_list = range(0, len(t_newt), 10)
-anim = animation.FuncAnimation(fig, update, frames=frames_list, interval=50)
-
 
 plt.close()
+
+
+#b
+
 
 
 
