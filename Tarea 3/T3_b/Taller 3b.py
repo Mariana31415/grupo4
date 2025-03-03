@@ -56,6 +56,100 @@ def gauss_seidel(phi, rho, mask, boundary_condition, dx, tol=1e-4, max_iter=1500
 phi = gauss_seidel(phi, rho, mask, boundary_condition, dx)
 
 
+#punto 2
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from numba import jit
+
+# Parámetros iniciales y constantes
+a0 = 1  # Radio de Bohr en unidades atómicas
+e = 1   # Carga del electrón en unidades atómicas
+m_e = 1 # Masa del electrón en unidades atómicas
+alpha = 1/137.035999206  # Constante de estructura fina
+EH = 1  # Energía de Hartree en unidades atómicas
+hbar = 1  # Constante reducida de Planck en unidades atómicas
+
+# Condiciones iniciales
+x0 = 1
+y0 = 0
+vx0 = 0
+vy0 = 1
+dt = 0.01
+tmax = 1000
+
+@jit(nopython=True)
+def coulomb_force(x, y):
+    r = np.sqrt(x**2 + y**2)
+    if r < 1e-6:  # Evitar singularidades numéricas
+        return np.array([0.0, 0.0])
+    return -np.array([x, y]) / r**3
+
+@jit(nopython=True)
+def derivs(state):
+    x, y, vx, vy = state
+    ax, ay = coulomb_force(x, y)
+    return np.array([vx, vy, ax, ay])
+
+@jit(nopython=True)
+def rk4_step(state, dt):
+    k1 = derivs(state)
+    k2 = derivs(state + dt/2 * k1)
+    k3 = derivs(state + dt/2 * k2)
+    k4 = derivs(state + dt * k3)
+    return state + dt/6 * (k1 + 2*k2 + 2*k3 + k4)
+
+@jit(nopython=True)
+def simulate_orbit(dt, tmax, include_larmor, amplification=1.0):
+    num_steps = int(tmax / dt)
+    states = np.zeros((num_steps, 4))
+    states[0] = np.array([x0, y0, vx0, vy0])
+    radius = np.zeros(num_steps)
+    energy = np.zeros(num_steps)
+
+    for i in range(1, num_steps):
+        state = states[i-1]
+        state = rk4_step(state, dt)
+        x, y, vx, vy = state
+        r = np.sqrt(x**2 + y**2)
+        radius[i] = r
+
+        kinetic_energy = 0.5 * m_e * (vx**2 + vy**2)
+        potential_energy = -e**2 / r if r > 1e-6 else -e**2 / 1e-6
+        energy[i] = kinetic_energy + potential_energy
+
+        if include_larmor:
+            v2 = vx**2 + vy**2
+            loss = amplification * (2/3) * alpha**3 * v2 / r**4 * dt
+
+            if loss >= kinetic_energy:
+                vx = 0
+                vy = 0
+                return states[:i], radius[:i], energy[:i], np.linspace(0, i*dt, i)
+            else:
+                v_new = np.sqrt(2 * (kinetic_energy - loss) / m_e)
+                factor = v_new / np.sqrt(v2)
+                vx *= factor
+                vy *= factor
+
+        states[i] = np.array([x, y, vx, vy])
+        if r < 0.01:  # Evita caída indefinida
+            return states[:i], radius[:i], energy[:i], np.linspace(0, i*dt, i)
+
+    return states, radius, energy, np.linspace(0, tmax, num_steps)
+
+# Simulación sin Larmor
+states_no_larmor, radius_no_larmor, energy_no_larmor, times_no_larmor = simulate_orbit(dt, tmax, False)
+
+# Simulación con Larmor (aumento de la amplificación)
+states_larmor, radius_larmor, energy_larmor, times_larmor = simulate_orbit(dt, tmax, True, amplification=1e6)
+
+
+print(f'2.b) t_fall = {times_larmor[-1]:.5f} en unidades de ℏ/EH')
+
+
+
 
 
 
