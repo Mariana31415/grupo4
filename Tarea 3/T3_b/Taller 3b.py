@@ -143,6 +143,112 @@ print("Videos guardados en:", os.getcwd())
 
 
 
+
+
+#punto 3
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+import numba
+from numba import jit
+
+# Parámetros
+alpha = 0.022
+L = 2.0  # Longitud del dominio
+dx = 0.02  # Paso espacial
+dt = 0.0005  # Paso temporal aún más reducido para estabilidad
+T_max = 2000  # Tiempo total de simulación
+save_interval = 10  # Guardar cada 10 pasos para reducir uso de memoria
+
+N = int(L / dx)  # Número de puntos en x
+M = int(T_max / dt)  # Número de pasos de tiempo
+
+# Malla espacial
+x = np.linspace(0, L, N, endpoint=False, dtype=np.float64)
+
+# Condición inicial
+psi = np.cos(np.pi * x).astype(np.float64)
+
+@jit(nopython=True)
+def evolucion_kdv(psi, N, M, dx, dt, alpha, save_interval):
+    """Simula la ecuación de KdV con diferencias finitas"""
+    num_saves = M // save_interval
+    sol = np.zeros((num_saves, N), dtype=np.float64)
+    sol[0, :] = psi.copy()
+    
+    masa = np.zeros(num_saves, dtype=np.float64)
+    momento = np.zeros(num_saves, dtype=np.float64)
+    energia = np.zeros(num_saves, dtype=np.float64)
+    
+    save_idx = 1
+    for t in range(1, M):
+        psi_new = np.empty_like(psi)
+        
+        for j in range(N):
+            jm2 = (j - 2) % N  # Índice j-2 con frontera periódica
+            jm1 = (j - 1) % N  # Índice j-1 con frontera periódica
+            jp1 = (j + 1) % N  # Índice j+1 con frontera periódica
+            jp2 = (j + 2) % N  # Índice j+2 con frontera periódica
+            
+            g_j = 0.5 * (psi[j] + psi[jp1])
+            g_jm1 = 0.5 * (psi[jm1] + psi[j])
+            g_jp1 = 0.5 * (psi[jp1] + psi[jp2])
+            
+            term1 = 3 * (dt / dx) * (psi[j] + g_jp1 + g_jm1) * (g_jp1 - g_jm1)
+            term2 = (alpha * dt / (2 * dx**3)) * (psi[jp2] - 2 * psi[jp1] + 2 * psi[jm1] - psi[jm2])
+            
+            psi_new[j] = psi[j] - term1 - term2
+        
+        psi[:] = psi_new  # Evita copias innecesarias
+        
+        if t % save_interval == 0:
+            sol[save_idx, :] = psi.copy()
+            
+            # Calcular cantidades conservadas
+            masa[save_idx] = np.sum(psi) * dx
+            momento[save_idx] = np.sum(psi**2) * dx
+            energia[save_idx] = np.sum((1/3) * psi**3 - alpha * ((psi[jp1] - psi[jm1]) / (2 * dx))**2) * dx
+            
+            save_idx += 1
+    
+    return sol, masa, momento, energia
+
+# Ejecutar la simulación
+sol, masa, momento, energia = evolucion_kdv(psi, N, M, dx, dt, alpha, save_interval)
+
+# Graficar la evolución temporal
+plt.figure(figsize=(8, 3))
+plt.imshow(sol.T, aspect='auto', extent=[0, T_max, 0, L], origin='lower', cmap='magma')
+plt.colorbar(label=r'$\psi(t, x)$')
+plt.xlabel('Time [s]')
+plt.ylabel('Angle x [m]')
+plt.title('Evolución de la ecuación de KdV')
+plt.show()
+
+# Graficar cantidades conservadas
+time_points = np.linspace(0, T_max, len(masa))
+
+fig, axs = plt.subplots(3, 1, figsize=(8, 6), sharex=True)
+axs[0].plot(time_points, masa, label='Masa')
+axs[0].set_ylabel('Masa')
+axs[0].legend()
+
+axs[1].plot(time_points, momento, label='Momento')
+axs[1].set_ylabel('Momento')
+axs[1].legend()
+
+axs[2].plot(time_points, energia, label='Energía')
+axs[2].set_ylabel('Energía')
+axs[2].set_xlabel('Tiempo')
+axs[2].legend()
+
+plt.tight_layout()
+plt.savefig('3.b.pdf')
+plt.show()
+
+
+
 #punto 4
 
 import numpy as np
@@ -154,9 +260,7 @@ import shutil
 # Comprobamos la ruta de ffmpeg
 print("FFmpeg path:", shutil.which("ffmpeg"))
 
-# -----------------------------------------------------
-# 1. PARÁMETROS DEL DOMINIO
-# -----------------------------------------------------
+
 Lx = 1.0   # Ancho en x (m)
 Ly = 2.0   # Largo en y (m)
 
@@ -169,23 +273,21 @@ dy = Ly/(ny - 1)
 x_vals = np.linspace(0, Lx, nx)  # eje x (0..1)
 y_vals = np.linspace(0, Ly, ny)  # eje y (0..2)
 
-# -----------------------------------------------------
 # 2. TIEMPO DE SIMULACIÓN
-# -----------------------------------------------------
+
 dt   = 0.0005   # Paso de tiempo
 tmax = 2.0      # 2 s
 Nt   = int(tmax/dt) + 1
 
-# -----------------------------------------------------
+
 # 3. MATRIZ DE VELOCIDADES c(x,y)
-# -----------------------------------------------------
 c_agua = 0.5
 
-# Pared alrededor de y=1 con grosor total 0.04 => y en [0.98, 1.02].
+
 y_pared_inf = 1.0 - 0.02  # 0.98
 y_pared_sup = 1.0 + 0.02  # 1.02
 
-# Elipse centrada en (x=0.5, y=1.0), semiejes (0.2, 0.2)
+
 x_c, y_c = 0.5, 1.0
 a_x, a_y = 0.2, 0.2
 
@@ -205,14 +307,14 @@ for j in range(ny):
         else:
             c_matrix[j, i] = c_agua     # Agua normal
 
-# -----------------------------------------------------
+
 # 4. ARREGLO 3D PARA u(t,y,x)
-# -----------------------------------------------------
+
 u = np.zeros((Nt, ny, nx))
 
-# -----------------------------------------------------
+
 # 5. FUENTE SINUSOIDAL
-# -----------------------------------------------------
+
 # Fuente en (x=0.5, y=0.5), amplitud 1 cm, freq=10 Hz
 x_f, y_f = 0.5, 0.5
 A = 0.01   # 1 cm
@@ -223,9 +325,9 @@ omega = 2.0 * np.pi * f
 i_f = np.argmin(np.abs(x_vals - x_f))
 j_f = np.argmin(np.abs(y_vals - y_f))
 
-# -----------------------------------------------------
+
 # 6. CONDICIONES DE FRONTERA
-# -----------------------------------------------------
+
 def aplicar_condiciones_frontera(u2d):
     # Fijar u=0 en todos los bordes
     u2d[0, :]   = 0.0   # y=0
@@ -234,18 +336,17 @@ def aplicar_condiciones_frontera(u2d):
     u2d[:, -1]  = 0.0   # x=1
     return u2d
 
-# -----------------------------------------------------
 # 7. CONDICIONES INICIALES
-# -----------------------------------------------------
+
 u[0] = 0.0
 u[1] = 0.0
 
 u[0] = aplicar_condiciones_frontera(u[0])
 u[1] = aplicar_condiciones_frontera(u[1])
 
-# -----------------------------------------------------
+
 # 8. BUCLE DE TIEMPO (ECUACIÓN DE ONDA 2D) + BARRA DE PROGRESO
-# -----------------------------------------------------
+
 for n in tqdm(range(1, Nt-1), desc="Simulación", ncols=80):
     for j in range(1, ny-1):
         for i in range(1, nx-1):
@@ -263,9 +364,9 @@ for n in tqdm(range(1, Nt-1), desc="Simulación", ncols=80):
     # Aplicar condiciones de frontera
     u[n+1] = aplicar_condiciones_frontera(u[n+1])
 
-# -----------------------------------------------------
+
 # 9. ANIMACIÓN
-# -----------------------------------------------------
+
 frames = []
 # Tomamos un fotograma cada 10 pasos => ~200 fotogramas en total
 for n in range(0, Nt, 10):
@@ -288,9 +389,6 @@ def update(frame):
 
 ani = animation.FuncAnimation(fig, update, frames=frames, interval=50)
 
-# -----------------------------------------------------
-# 10. GUARDAR VIDEO EN MP4 (requiere ffmpeg instalado)
-# -----------------------------------------------------
 # Ajusta fps=5 (o el que desees)
 ani.save('onda_2D.mp4', writer='ffmpeg', fps=5)
 
