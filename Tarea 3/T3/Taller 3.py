@@ -5,6 +5,8 @@ from scipy.signal import argrelextrema
 from numba import jit
 import matplotlib.animation as animation
 from IPython.display import HTML
+from scipy.integrate import solve_ivp
+
 
 # Parámetros del problema
 g = 9.773  # Gravedad en Bogotá (m/s²)

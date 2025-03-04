@@ -4,6 +4,7 @@ from numba import jit
 from celluloid import Camera
 import matplotlib.animation as animation
 from IPython.display import HTML
+from scipy.integrate import solve_ivp
 
 #primer punto Poisson
 
