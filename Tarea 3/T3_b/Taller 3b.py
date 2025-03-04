@@ -392,4 +392,4 @@ ani = animation.FuncAnimation(fig, update, frames=frames, interval=50)
 # Ajusta fps=5 (o el que desees)
 ani.save('onda_2D.mp4', writer='ffmpeg', fps=5)
 
-plt.show()
+
