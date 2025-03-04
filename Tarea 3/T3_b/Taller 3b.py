@@ -158,7 +158,7 @@ alpha = 0.022
 L = 2.0  # Longitud del dominio
 dx = 0.02  # Paso espacial
 dt = 0.0005  # Paso temporal aún más reducido para estabilidad
-T_max = 2000  # Tiempo total de simulación
+T_max = 2# Tiempo total de simulación
 save_interval = 10  # Guardar cada 10 pasos para reducir uso de memoria
 
 N = int(L / dx)  # Número de puntos en x
