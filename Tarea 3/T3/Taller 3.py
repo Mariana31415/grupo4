@@ -305,6 +305,7 @@ incertidumbre_pendiente = np.sqrt(cov_matrix[0, 0])  # Extraer incertidumbre de 
 pendiente_siglo = pendiente_año * 100
 incertidumbre_pendiente_siglo = incertidumbre_pendiente * 100
 
+#punto 3
 
 
 
@@ -356,3 +357,4 @@ scale_factor = 0.5  # Puedes ajustar este valor según necesites
 for n in range(n_levels):
     psi = scale_factor * wavefunctions[:, n]  # Escalar la función de onda
     E_n = energies[n]
+
