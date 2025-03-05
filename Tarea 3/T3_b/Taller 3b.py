@@ -128,6 +128,8 @@ def simulate(boundary_type):
     animation.save(f'2_{boundary_type}.mp4', writer='ffmpeg', fps=fps)
     plt.close()
 
+
+
 #Punto 3
 
 # Parámetros
@@ -180,10 +182,4 @@ def evolucion_kdv(psi, psi_old, N, M, dx, dt, alpha, save_interval):
 
 
 
-# Cálculo de cantidades conservadas
-times = np.arange(0, T_max, save_interval * dt)
-masa = np.trapz(sol, dx=dx, axis=1)
-momento = np.trapz(sol**2, dx=dx, axis=1)
-energia = np.trapz((sol*3) / 3 - (alpha * np.gradient(sol, dx, axis=1))*2, dx=dx, axis=1)
-    
 
