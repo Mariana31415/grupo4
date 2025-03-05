@@ -183,107 +183,67 @@ print(f'2.b) t_fall = {times_larmor[-1]:.5f} en unidades de ℏ/EH')
 
 #punto 3
 
-#a
-# Parámetros físicos y orbitales
-GM = 4.0 * np.pi**2
-c = 63239.7263
-a = 0.38709893
-e = 0.20563069
+!apt install ffmpeg
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+from scipy.signal import argrelextrema
+import matplotlib.animation as animation
+from matplotlib.animation import FFMpegWriter
 
-x0 = a * (1.0 + e)
-y0 = 0.0
-r0 = x0
-v0 = np.sqrt(GM * (2.0/r0 - 1.0/a))
-vx0 = 0.0
-vy0 = +v0
-t_span = (0.0, 10.0)
-dt = 1e-2
-alpha = 1e-2
+GM = 39.4234021               # Constante GM en UA^3/año^2
+a = 0.38709893                # Semieje mayor (UA)
+e = 0.20563069                # Excentricidad
+alpha = 1.097782201e-8        # Factor de corrección relativista (valor real muy pequeño)
 
-# Función de derivadas (Newton y Relativista)
-def derivadas_newton(t, state):
-    x, y, vx, vy = state
-    r = np.sqrt(x*x + y*y)
-    ax = -GM * x / (r**3)
-    ay = -GM * y / (r**3)
-    return np.array([vx, vy, ax, ay])
-
-# Método RK4
-def runge_kutta_4(derivs, y0, t_span, dt):
-    t0, tf = t_span
-    n_steps = int(np.floor((tf - t0)/dt))
-    times = np.zeros(n_steps+1)
-    sol = np.zeros((n_steps+1, len(y0)))
-
-    times[0] = t0
-    sol[0] = y0
-
-    for i in range(n_steps):
-        t = times[i]
-        y = sol[i]
-
-        k1 = derivs(t, y)
-        k2 = derivs(t + dt/2, y + dt*k1/2)
-        k3 = derivs(t + dt/2, y + dt*k2/2)
-        k4 = derivs(t + dt, y + dt*k3)
-
-        sol[i+1] = y + (dt/6.0) * (k1 + 2*k2 + 2*k3 + k4)
-        times[i+1] = t + dt
-
-    return times, sol
-
-estado_inicial = np.array([x0, y0, vx0, vy0])
-t_newt, sol_newt = runge_kutta_4(derivadas_newton, estado_inicial, t_span, dt)
-x_n, y_n = sol_newt[:, 0], sol_newt[:, 1]
-
-
-
-
-plt.close()
-
-
-#b
-
-# Parámetros físicos y orbitales
-GM = 4.0 * np.pi**2
-a = 0.38709893
-e = 0.20563069
-
+# Condiciones iniciales en aphelio
 x0 = a * (1.0 + e)
 y0 = 0.0
 vx0 = 0.0
-vy0 = np.sqrt(GM * (2.0 / x0 - 1.0 / a))
+vy0 = np.sqrt(GM/a * ((1 - e) / (1 + e)))  # Velocidad en aphelio (vis viva)
 
-# Función de derivadas (Newton)
-def derivadas_newton(t, state):
+
+def derivadas_relatividad(t, state):
+    """
+    Fuerza relativista:
+      a = -(GM/r^2) * (1 + alpha/(r^2)) * r_unit_vector
+    """
     x, y, vx, vy = state
     r = np.sqrt(x*x + y*y)
-    ax = -GM * x / r**3
-    ay = -GM * y / r**3
+    ax = -(GM * x)/(r**3) * (1 + alpha/(r**2))
+    ay = -(GM * y)/(r**3) * (1 + alpha/(r**2))
     return [vx, vy, ax, ay]
 
-# Resolver con RK45
-t_span = (0, 10)  # 10 años
+
+t_span = (0, 10)             # Simulación de 10 años
 dt = 1e-3
 t_eval = np.arange(t_span[0], t_span[1], dt)
-sol = solve_ivp(derivadas_newton, t_span, [x0, y0, vx0, vy0], t_eval=t_eval, method='RK45')
+
+sol = solve_ivp(
+    derivadas_relatividad,
+    t_span,
+    [x0, y0, vx0, vy0],
+    t_eval=t_eval,
+    method='RK45',
+    max_step=1e-3
+)
 
 x, y = sol.y[0], sol.y[1]
 vx, vy = sol.y[2], sol.y[3]
 
-# Encontrar periastro y apoastro
+# (Opcional) Análisis de perihelios
 r = np.sqrt(x**2 + y**2)
 periastro_idx = argrelextrema(r, np.less)[0]
 
-# Calcular ángulos y aplicar np.unwrap para evitar saltos
 angles_periastro = np.unwrap(np.arctan2(y[periastro_idx], x[periastro_idx]))
-
 t_periastro = sol.t[periastro_idx]
 
-# Convertir ángulos a grados y luego a arcosegundos
 angles_periastro_deg = np.degrees(angles_periastro) % 360
 angles_periastro_arcsec = angles_periastro_deg * 3600
 
+
+(coefs, cov_matrix) = np.polyfit(t_periastro, angles_periastro_arcsec, 1, cov=True)
+=======
 # Calcular el período teórico
 P_teo = np.sqrt(a**3)
 
@@ -298,12 +258,68 @@ print(f'2.a) {P_teo = :.5f}; {P_sim = :.5f}')
 
 # Ajuste lineal con incertidumbre
 (coefs, cov_matrix) = np.polyfit(t_periastro, angles_periastro_arcsec, 1, cov=True)  # Extraer coeficientes y covarianza
-pendiente_año, intercepto = coefs
-incertidumbre_pendiente = np.sqrt(cov_matrix[0, 0])  # Extraer incertidumbre de la pendiente
 
-# Convertir pendiente a arcsec/siglo
+pendiente_año, intercepto = coefs
+incertidumbre_pendiente = np.sqrt(cov_matrix[0, 0])
 pendiente_siglo = pendiente_año * 100
 incertidumbre_pendiente_siglo = incertidumbre_pendiente * 100
+
+plt.figure(figsize=(6, 6))
+plt.plot(x, y, 'b', label='Órbita de Mercurio - Relativista')
+plt.plot(0, 0, 'o', color='orange', label='Sol')
+plt.axis('equal')
+plt.xlabel('x [UA]')
+plt.ylabel('y [UA]')
+plt.title('Órbita de Mercurio - Relativista')
+plt.legend()
+plt.grid()
+plt.show()
+
+plt.figure(figsize=(8, 5))
+plt.scatter(t_periastro, angles_periastro_arcsec, label='Periastros', color='b')
+plt.plot(
+    t_periastro,
+    pendiente_año * t_periastro + intercepto,
+    'r--',
+    label=f'Ajuste: {pendiente_siglo:.2f} ± {incertidumbre_pendiente_siglo:.2f} arcsec/siglo'
+)
+plt.xlabel('Tiempo (años)')
+plt.ylabel('Ángulo del periastro (arcsec)')
+plt.title('Precesión de la órbita de Mercurio')
+plt.legend()
+plt.grid()
+plt.savefig('3.b.pdf')
+plt.show()
+
+print(f'Pendiente estimada: {pendiente_siglo:.2f} ± {incertidumbre_pendiente_siglo:.2f} arcsec/siglo')
+
+
+fig, ax = plt.subplots(figsize=(6,6))
+ax.set_aspect('equal')
+ax.set_xlim([1.1 * np.min(x), 1.1 * np.max(x)])
+ax.set_ylim([1.1 * np.min(y), 1.1 * np.max(y)])
+ax.set_xlabel('x [UA]')
+ax.set_ylabel('y [UA]')
+ax.set_title('3.a - Órbita de Mercurio (Relativista)')
+
+# Dibujar el Sol
+sol_central, = ax.plot([0], [0], 'o', color='orange', label='Sol')
+# Línea de la trayectoria y punto actual
+line, = ax.plot([], [], 'b-', label='Trayectoria (Relativista)')
+pt, = ax.plot([], [], 'ro')
+ax.legend()
+
+writer = FFMpegWriter(fps=30)
+skip_frames = 10  # Guardar 1 de cada 10 frames para acelerar la generación
+
+with writer.saving(fig, "3.a.mp4", dpi=100):
+    for i in range(0, len(t_eval), skip_frames):
+        line.set_data(x[:i], y[:i])
+        pt.set_data([x[i]], [y[i]])
+        writer.grab_frame()
+
+plt.close()
+
 
 
 
