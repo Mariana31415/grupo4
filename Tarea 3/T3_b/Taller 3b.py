@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
-
+from celluloid import Camera
 import matplotlib.animation as animation
 from IPython.display import HTML
+from scipy.integrate import solve_ivp
 
 #primer punto Poisson
 
@@ -56,11 +57,9 @@ def gauss_seidel(phi, rho, mask, boundary_condition, dx, tol=1e-4, max_iter=1500
 phi = gauss_seidel(phi, rho, mask, boundary_condition, dx)
 
 
-#punto 2
 
-import numpy as np
-import matplotlib.pyplot as plt
-from celluloid import Camera
+#Punto 2 ondas
+
 
 # Parámetros
 c = 1.0          # Velocidad de la onda
@@ -130,6 +129,7 @@ def simulate(boundary_type):
     animation.save(f'2_{boundary_type}.mp4', writer='ffmpeg', fps=fps)
     plt.close()
 
+
 # Simular para cada condición de contorno
 for boundary_type in ['dirichlet', 'neumann', 'periodic']:
     print(f"Simulando con condición de contorno: {boundary_type}")
@@ -147,11 +147,6 @@ print("Videos guardados en:", os.getcwd())
 
 #punto 3
 
-
-import numpy as np
-import matplotlib.pyplot as plt
-import numba
-from numba import jit
 
 # Parámetros
 alpha = 0.022
