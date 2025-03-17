@@ -10,7 +10,7 @@ from matplotlib.animation import FuncAnimation
 
 
 #Punto 3
-print('Punto 3')
+
 
 N = 150        # Tamaño de la malla
 J = 0.2        # Constante de interacción
@@ -194,7 +194,7 @@ for n in range(1, 8):
     percentages.append(valid_percentage)
     with open(f'gen_text_n{n}.txt', 'w', encoding='utf-8') as f:
         f.write(f'N-grama {n}:\n\n{generated_text}\n\n{"-"*50}\n\n')
-    print(f'Texto generado para n={n} guardado en gen_text_n{n}.txt')
+    #print(f'Texto generado para n={n} guardado en gen_text_n{n}.txt')
 
 
 
