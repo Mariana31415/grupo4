@@ -5,6 +5,8 @@ from scipy.signal import argrelextrema
 from numba import jit
 import matplotlib.animation as animation
 from IPython.display import HTML
+from scipy.integrate import solve_ivp
+
 
 # Parámetros del problema
 g = 9.773  # Gravedad en Bogotá (m/s²)
@@ -282,6 +284,14 @@ t_periastro = sol.t[periastro_idx]
 angles_periastro_deg = np.degrees(angles_periastro) % 360
 angles_periastro_arcsec = angles_periastro_deg * 3600
 
+# Calcular el período teórico
+P_teo = np.sqrt(a**3)
+
+# Calcular el período simulado (promedio de diferencias entre tiempos de periastro)
+P_sim = np.mean(np.diff(t_periastro))
+
+# Imprimir en el formato solicitado
+print(f'2.a) {P_teo = :.5f}; {P_sim = :.5f}')
 
 
 
@@ -295,6 +305,7 @@ incertidumbre_pendiente = np.sqrt(cov_matrix[0, 0])  # Extraer incertidumbre de 
 pendiente_siglo = pendiente_año * 100
 incertidumbre_pendiente_siglo = incertidumbre_pendiente * 100
 
+#punto 3
 
 
 
@@ -346,3 +357,4 @@ scale_factor = 0.5  # Puedes ajustar este valor según necesites
 for n in range(n_levels):
     psi = scale_factor * wavefunctions[:, n]  # Escalar la función de onda
     E_n = energies[n]
+
