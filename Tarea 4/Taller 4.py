@@ -9,6 +9,88 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 
+
+
+
+
+#punto 2
+
+print('Punto 2')
+
+D1 = 50  # cm
+D2 = 50  # cm
+wavelength = 670e-7  # cm
+A = 0.04  # cm
+a = 0.01  # cm
+d = 0.1  # cm
+N = 100000
+
+def monte_carlo_intensity(z):
+    x_samples = np.random.uniform(-A/2, A/2, N)
+    y = np.random.uniform(d/2, a+d/2, N)
+    lista = [-1, 1]
+    y_samples = y * np.random.choice(lista, len(y))
+
+    phase1 = 2 * np.pi * (D1 + D2) / wavelength
+    phase2 = np.pi / (wavelength * D1)
+    phase3 = np.pi / (wavelength * D2)
+
+    integrand = np.exp(1j * phase1) * np.exp(1j * phase2 * (x_samples - y_samples)**2) * np.exp(1j * phase3 * (z - y_samples)**2)
+    integral_value = np.abs(np.mean(integrand))**2
+    return integral_value
+
+z_values = np.linspace(-0.4, 0.4, 500)
+quantum_intensity = np.array([monte_carlo_intensity(z) for z in z_values])
+
+theta = np.arctan(z_values / D2)
+classic_intensity = np.cos(np.pi * d * np.sin(theta) / wavelength)**2 * np.sinc(a * np.sin(theta) / wavelength)**2
+
+quantum_intensity /= np.max(quantum_intensity)
+classic_intensity /= np.max(classic_intensity)
+
+'''
+plt.figure(figsize=(10, 6))
+plt.plot(z_values, quantum_intensity, label='Modelo Cuántico (Monte Carlo)', color='royalblue', linewidth=2, alpha=0.9)
+plt.plot(z_values, classic_intensity, label='Modelo Clásico', color='crimson', linestyle='dashdot', linewidth=2, alpha=0.8)
+
+plt.xlabel(r'$z$ (cm)', fontsize=14)
+plt.ylabel('Intensidad Normalizada', fontsize=14)
+plt.title('Comparación de Intensidad Cuántica y Clásica', fontsize=16)
+
+plt.legend(fontsize=12, loc='upper right')
+plt.grid(True, linestyle='dotted', linewidth=0.8, alpha=0.6)
+#plt.savefig('2.pdf')
+'''
+
+print('En la mecánica clásica, la interferencia depende de las longitudes de onda y las posiciones relativas de las ranuras.\n'
+'Mientras que en cuántica, el fenómeno de interferencia se debe a la superposición de funciones de onda generada por los fotones. \n'
+'Se generan fotones aleatoriamente dentro de las dimensiones de la rendija y se calcula la fase de la onda en función de su trayectoria.\n'
+'Donde luego se promedian las contribuciones de cada una para obtener la intensidad. Tenemos que cuando el número de fotónes aumenta, se acerca más al caso clásico como se\n'
+'ve gráficamente.')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #Punto 3
 
 
@@ -51,7 +133,6 @@ def update(frame):
     return 
 # Crear la animación
 #anim = FuncAnimation(fig, update, frames=frames, interval=50, blit=True)
-
 
 
 
@@ -121,30 +202,6 @@ def train_and_predict(text, n):
     return ngram_frequencies, initial_ngram
 
 
-#4.c Análisis
-
-with open('words_alpha.txt', 'r') as f:
-    valid_words = set(word.strip() for word in f.readlines())
-
-results = {}
-for n in range(1, 8):
-    ngram_frequencies, initial_ngram = train_and_predict(cleaned_text, n)
-    generated_text = generate_text(ngram_frequencies, initial_ngram, m=1500)
-
-    # Contar palabras válidas
-    words = generated_text.split()
-    valid_count = sum(1 for word in words if word in valid_words)
-    valid_percentage = (valid_count / len(words)) * 100 if words else 0
-
-    results[n] = valid_percentage
-
-for n, percentage in results.items():
-    print(f"n={n}: Porcentaje de palabras válidas = {percentage:.2f}%")
-
-print('4.c Analisis: Para n=1, las palabras que genera el texto no tienen sentido. Al tener n=5 o 6, los n-gramas incluyen secuencias mas coherentes y con n>=7 el texto tiene sentido\n'
-'Sin embargo, se evidenció que al tener un n entre 3 y 5, es cuando el porcentaje de palabras válidas tiene un incremento. Cuando llega a n = 7 solo aumenta un poco más y al\n'
-'aumentar demasiado los n obtuvimos que se queda estable el porcentaje.')
-
 
 
 #Generar el texto con m= 1500
@@ -171,14 +228,49 @@ def generate_text(ngram_frequencies, initial_ngram, m=1500, line_length=80):
 
 
 
-file_path = 'Prideandprejudice.txt'
+
+
+
+file_path = 'Prideandprejudice2.txt'
 cleaned_text = clean_text(file_path)
 if not cleaned_text:
+    
     #raise ValueError("El texto limpio está vacío. Verifica el archivo de entrada.")
 
 
-    with open('words_alpha.txt', 'r') as f:
+    with open('words_alpha2.txt', 'r') as f:
         valid_words = set(word.strip() for word in f.readlines())
+
+#4.c Análisis
+
+
+
+with open('words_alpha2.txt', 'r') as f:
+    valid_words = set(word.strip() for word in f.readlines())
+
+results = {}
+for n in range(1, 8):
+    ngram_frequencies, initial_ngram = train_and_predict(cleaned_text, n)
+    generated_text = generate_text(ngram_frequencies, initial_ngram, m=1500)
+
+    # Contar palabras válidas
+    words = generated_text.split()
+    valid_count = sum(1 for word in words if word in valid_words)
+    valid_percentage = (valid_count / len(words)) * 100 if words else 0
+
+    results[n] = valid_percentage
+
+for n, percentage in results.items():
+    print(f"n={n}: Porcentaje de palabras válidas = {percentage:.2f}%")
+
+print('4.c Analisis: Para n=1, las palabras que genera el texto no tienen sentido. Al tener n=5 o 6, los n-gramas incluyen secuencias mas coherentes y con n>=7 el texto tiene sentido\n'
+'Sin embargo, se evidenció que al tener un n entre 3 y 5, es cuando el porcentaje de palabras válidas tiene un incremento. Cuando llega a n = 7 solo aumenta un poco más y al\n'
+'aumentar demasiado los n obtuvimos que se queda estable el porcentaje.')
+
+
+
+
+
 
 results = {}
 n_values = []
