@@ -6,14 +6,11 @@ import multiprocessing
 from numba import jit
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 
 #Punto 3
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+print('Punto 3')
 
 N = 150        # Tamaño de la malla
 J = 0.2        # Constante de interacción
