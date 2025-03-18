@@ -7,6 +7,69 @@ from numba import jit
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from scipy.integrate import quad
+
+
+#punto 1
+print('punto 1')
+#punto 1
+def g_x(x, n, alpha):
+    """Función g(x; n, α) no normalizada."""
+    return sum(np.exp(-k*(x - k)**2) * k**(-alpha) for k in range(1, int(n)+1))
+
+def metropolis_hastings(alpha, N, ancho_propuesta, n):
+    """Algoritmo de Metropolis-Hastings para muestrear de la distribución g(x)."""
+    samples = []
+    x = np.random.uniform(0, 10)
+    
+    for _ in range(N):
+        x_propuesta = np.random.normal(x, ancho_propuesta)
+        aceptacion_ratio = min(1, g_x(x_propuesta, n, alpha) / g_x(x, n, alpha))
+        if np.random.rand() < aceptacion_ratio:
+            x = x_propuesta
+        samples.append(x)
+    
+    return np.array(samples)
+
+def f_x(x):
+    """Función f(x) con integral conocida (exp(-x^2))."""
+    return np.exp(-x**2)
+
+def calcular_A(samples, n, alpha):
+    """Calcula la integral A usando muestreo Monte Carlo."""
+    g_values = np.array([g_x(x, n, alpha) for x in samples])
+    f_values = np.array([f_x(x) for x in samples])
+    estimaciones = f_values / g_values
+    A = np.mean(estimaciones)
+    incertidumbre = np.std(estimaciones) / np.sqrt(len(samples))
+    return A, incertidumbre
+
+# Parámetros
+n_samples = 500000
+n = 10
+alpha = 4/5
+ancho_propuesta = 2.0  # Ajuste del ancho de propuesta
+
+# Obtener datos con Metropolis-Hastings
+data = metropolis_hastings(alpha, N=n_samples, ancho_propuesta=ancho_propuesta, n=n)
+
+# Calcular A y su incertidumbre
+A_estimado, error_A = calcular_A(data, n, alpha)
+print(f"1.b) A estimado = {A_estimado} ± {error_A}")
+
+'''
+# Crear histograma diferenciado
+plt.figure(figsize=(10, 6))
+plt.hist(data, bins=200, density=True, color='darkorange', alpha=0.6, edgecolor='black', label='Muestras de g(x)')
+plt.xlabel("x")
+plt.ylabel("Densidad")
+plt.title("Histograma de muestras de g(x; n, α)")
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.legend()
+#plt.savefig("1_a.pdf")
+'''
+
+
 
 
 
@@ -231,21 +294,21 @@ def generate_text(ngram_frequencies, initial_ngram, m=1500, line_length=80):
 
 
 
-file_path = 'Prideandprejudice2.txt'
+file_path = 'Prideandprejudice.txt'
 cleaned_text = clean_text(file_path)
 if not cleaned_text:
     
     #raise ValueError("El texto limpio está vacío. Verifica el archivo de entrada.")
 
 
-    with open('words_alpha2.txt', 'r') as f:
+    with open('words_alpha.txt', 'r') as f:
         valid_words = set(word.strip() for word in f.readlines())
 
 #4.c Análisis
 
 
 
-with open('words_alpha2.txt', 'r') as f:
+with open('words_alpha.txt', 'r') as f:
     valid_words = set(word.strip() for word in f.readlines())
 
 results = {}
